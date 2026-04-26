@@ -1,0 +1,60 @@
+run:
+  name: "LCDM"
+  description: "LCDM marginalization test runs"
+  run_id: "Checklist_Tests/MultiAuto/PP_CC_1"   
+
+model:
+  name: LCDM
+
+likelihoods: 
+  - name: PP
+  - name: CC
+
+# ── emcee (MCMC) ────────────────────────────────────────────────────────────
+sampler:
+  name: emcee
+  init: 
+    random_seed: 42
+  run: 
+    nsteps: 5000
+    burn_in: 2500
+  
+convergence:
+  mode: multi_auto            # "single" / "multi_fixed" / "multi_auto"   UNDER CONSTRUCTION
+  nchains: 4
+  ncores: 4
+  rhat_tol: 0.01
+  ess_min: 1000
+  tau_factor: 50
+  check_every: 50            # check convergence every N steps (chains run continuously)
+  max_steps: 50000            # hard stop if convergence not reached
+
+# ── Dynesty (nested sampling) ────────────────────────────────────────────────
+# To use Dynesty, replace the sampler block above with this block.
+# The convergence block is NOT required for nested samplers; remove it or leave it.
+#
+#sampler:
+#  name: dynesty
+#  init:
+#    nlive: 100          # live points (default 500; use ~25*ndim for accuracy)
+#
+# ── PolyChord (nested sampling) ──────────────────────────────────────────────
+# To use PolyChord, replace the sampler block above with this block.
+# Requires pypolychord to be installed (see installation instructions).
+#
+#sampler:
+#  name: polychord
+#  init:
+#    nlive: 250           # default 25*ndim; PolyChord is efficient with fewer live pts
+#    num_repeats: 20      # default 5*ndim; increase for degenerate posteriors
+#    precision_criterion: 0.001
+#    base_dir: chains
+#    file_root: cosmix_run
+
+outputs:
+  plots:
+    trace: true
+    corner: true
+    residual: true
+
+  archive: true

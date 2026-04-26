@@ -1,0 +1,81 @@
+# ─── Python bytecode ─────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# ─── Virtual environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ─── Sampler raw output ───────────────────────────────────────────────────────
+# PolyChord / MCMC live-run files — kept as empty dir via .gitkeep
+chains/*
+!chains/.gitkeep
+
+# ─── Run archives ─────────────────────────────────────────────────────────────
+# Stored chain data, figures, diagnostics — can be large binary files.
+# Keep the directory skeleton but not the contents.
+RUNS_/**/*.npy
+RUNS_/**/*.npz
+RUNS_/**/*.json
+RUNS_/**/*.pdf
+RUNS_/**/*.png
+RUNS_/**/*.svg
+RUNS_/**/*.txt
+RUNS_/**/manifest.yaml
+RUNS_/Garbage/
+
+# ─── Excluded directories and files ─────────────────────────────────────────
+# Not ready for public repo — will be added in a future commit
+TESTS_/
+FUTURE_/
+Test_Results_/
+GRADED_TASKS/
+
+# Specific files excluded from this release
+LCDM_Baseline.yaml
+compare_runs.py
+
+# ─── Root-level figure outputs ───────────────────────────────────────────────
+*.pdf
+*.png
+*.svg
+
+# ─── Jupyter notebook checkpoints ────────────────────────────────────────────
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# ─── OS / editor artefacts ───────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ─── VS Code workspace settings (machine-specific) ───────────────────────────
+.vscode/
+
+# Excel temporary lock files (created by Windows when a file is open)
+~$*.xlsx
+~$*.xls
+~$*.xlsm
+
+# ─── Build artefacts (PolyChordLite extension) ────────────────────────────────
+DATA_/PolyChordLite/build/
+DATA_/PolyChordLite/dist/
+DATA_/PolyChordLite/*.egg-info/
+DATA_/PolyChordLite/**/*.so
+DATA_/PolyChordLite/**/*.pyd
+DATA_/PolyChordLite/**/*.pyc
+
+# ─── IDE / tool configs ───────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.code-workspace
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+*.log
+*.bak
+*.swp
+*.tmp
