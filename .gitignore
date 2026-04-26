@@ -35,9 +35,24 @@ FUTURE_/
 Test_Results_/
 GRADED_TASKS/
 
+# Large external datasets — too big for GitHub (DES-SN5YR is ~1.8 GB)
+# Users should obtain these from the official sources.
+DATA_/DES-SN5YR/
+
 # Specific files excluded from this release
 LCDM_Baseline.yaml
 compare_runs.py
+COSMIX_Roadmap.md
+MAM.ipynb
+ParameterScan.py
+VIZ_Complete_hybrid.ipynb
+VIZ_EHybrid.ipynb
+VIZ_fQ_IDE.ipynb
+run_cocoa.py
+
+# Internal run notes / scratch configs
+RUNS_/IUCAA_meet_Feb_26/
+RUNS_/minimal_manifest_scheme.yaml
 
 # ─── Root-level figure outputs ───────────────────────────────────────────────
 *.pdf

@@ -89,7 +89,7 @@ class CompressedCMB(LikelihoodBase):
             Parameter(
                 name="omega_b",
                 latex=r"\omega_b",
-                prior=GaussianPrior(low=0.01, high=0.05, mean=0.02237, sig=0.00015),
+                prior=GaussianPrior(mean=0.02237, sig=0.00015, low=0.01, high=0.05),
                 role="nuisance",
                 status="free",
                 proposed_scale=0.0001
@@ -97,7 +97,7 @@ class CompressedCMB(LikelihoodBase):
             Parameter(
                 name="n_s",
                 latex=r"n_s",
-                prior=GaussianPrior(low= 0.5, high=1.5, mean=0.9649, sig=0.0042),
+                prior=GaussianPrior(mean=0.9649, sig=0.0042, low= 0.5, high=1.5),
                 role="nuisance",
                 status="free",
                 proposed_scale=0.003

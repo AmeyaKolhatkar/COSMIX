@@ -46,15 +46,10 @@ class DESIDRIIBAO(LikelihoodBase):
         self.cov = cov
         self.inv_cov = np.linalg.inv(cov)
 
-        # different z arrays for different quantities
-        self.z_DV = np.array([0.295]) 
-        self.z_DM = np.array([0.51, 0.706, 0.934, 1.321, 1.484, 2.33])
-        self.z_DH = self.z_DM
-
         # precompute normalization
         sign, logdet = np.linalg.slogdet(self.cov)
         if sign <= 0:
-            raise RuntimeError("Covariance matrix not positive definite.")
+            raise RuntimeError("[DESIDRIIBAO] Covariance matrix not positive definite.")
         
         self.data_size = len(self.z)
         self.ln_norm = -0.5 * (logdet + len(self.z) * np.log(2.0 * np.pi))
@@ -87,8 +82,48 @@ class DESIDRIIBAO(LikelihoodBase):
     
     def norm_term(self):
         return float(self.ln_norm)
-    
+
+    # ------------------------------------------------------------------ #
+    # Analytic marginalisation over r_d                                   #
+    # ------------------------------------------------------------------ #
+    # The theory vector is linear in s = 1/r_d:                          #
+    #   t_i(s) = D_X(z_i) * s                                            #
+    # so the GaussMarg formalism applies exactly:                         #
+    #   A = T^T C^{-1} T,  B = T^T C^{-1} d                             #
+    #   MAP s = B/A  =>  MAP r_d = A/B                                   #
+    # ------------------------------------------------------------------ #
+
+    def supports_marginalization(self, name):
+        return name == "rd"
+
+    def _raw_theory_vec(self, theory):
+        """D_X(z) values in data-vector order — no division by r_d."""
+        T = []
+        for z, label in zip(self.z, self.qty_name):
+            key = label.split("_")[0]          # DV, DM, or DH
+            T.append(theory.eval(key, np.array([z]))[0])
+        return np.array(T)
+
+    def _map_rd(self, theory):
+        """MAP estimate of r_d when it is analytically marginalised."""
+        T = self._raw_theory_vec(theory)
+        A = float(T @ self.inv_cov @ T)
+        B = float(T @ self.inv_cov @ self.qty)
+        return A / B                            # r_d = 1 / s_MAP = A / B
+
+    def marginalization_terms(self, theory):
+        T = self._raw_theory_vec(theory)
+        A = float(T @ self.inv_cov @ T)
+        B = float(T @ self.inv_cov @ self.qty)
+        return GaussMargTerm("rd", A, B, ln_norm=0.0)
+
     def lnlike(self, theta, theory):
+        if self.pm.is_marginalized("rd"):
+            # Cosmology-independent data term only; GaussMargTerm carries
+            # all cosmological information through A and B.
+            chi2_data = float(self.qty @ self.inv_cov @ self.qty)
+            return -0.5 * chi2_data + self.ln_norm
+
         rd = self.pm.get_value(theta, "rd")
 
         th_list = []
@@ -101,7 +136,6 @@ class DESIDRIIBAO(LikelihoodBase):
                 val = theory.eval("DH", np.array([z]))[0] / rd
             else:
                 raise ValueError(f"Unknown BAO observable label: {label}")
-            
             th_list.append(val)
 
         th_vec = np.array(th_list)
@@ -109,11 +143,12 @@ class DESIDRIIBAO(LikelihoodBase):
         chi2 = res @ self.inv_cov @ res
         if not np.isfinite(chi2):
             return -np.inf
-        
+
         return -0.5 * chi2 + self.ln_norm
-    
+
     def get_theory_components(self, theta, theory, z_override=None):
-        rd = self.pm.get_value(theta, "rd")
+        rd = self._map_rd(theory) if self.pm.is_marginalized("rd") else self.pm.get_value(theta, "rd")
+
         if z_override is None:
             x = self.z
             th_list = []
@@ -123,15 +158,14 @@ class DESIDRIIBAO(LikelihoodBase):
                 val = theory.eval(key, np.array([z]))
                 if val is None:
                     return {}
-                
                 th_list.append(val[0] / rd)
 
             th_vec = np.array(th_list)
             d_vec = self.qty
             sigma = np.sqrt(np.diag(self.cov))
 
-            return { "BAO": (x, d_vec, th_vec, sigma) }
-        
+            return {"BAO": (x, d_vec, th_vec, sigma)}
+
         else:
             x = z_override
             out = {}

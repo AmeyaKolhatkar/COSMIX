@@ -23,7 +23,7 @@ ParameterManager — aggregates Parameter objects and exposes the API above.
 # Preamble 
 #------------------------------
 import numpy as np
-from scipy.stats import truncnorm
+from scipy.stats import truncnorm, norm as _norm
 
 
 #------------------------------
@@ -91,36 +91,42 @@ class UniformPrior(Prior):
 # Gaussian Prior Class 
 #------------------------------    
 class GaussianPrior(Prior):
-    def __init__(self, low, high, mean, sig):
-        self.low = low
-        self.high = high
+    """Gaussian prior.  Bounds are optional (default: unbounded).
+
+    Usage
+    -----
+    GaussianPrior(mean=0.0, sig=1.0)                        # unbounded
+    GaussianPrior(mean=70.0, sig=5.0, low=50.0, high=90.0) # truncated
+    """
+    def __init__(self, mean, sig, low=-np.inf, high=np.inf):
         self.mean = mean
-        self.sig = sig 
+        self.sig  = sig
+        self.low  = low
+        self.high = high
 
     def lnprob(self, x):
-        if self.low <= x <= self.high:
-            return -0.5 * ( ( x - self.mean )/ self.sig )**2
-        return -np.inf
-    
+        if np.isfinite(self.low)  and x < self.low:  return -np.inf
+        if np.isfinite(self.high) and x > self.high: return -np.inf
+        return -0.5 * ((x - self.mean) / self.sig) ** 2
+
     def in_support(self, x):
-        return self.low <= x <= self.high
+        lo_ok = (not np.isfinite(self.low))  or x >= self.low
+        hi_ok = (not np.isfinite(self.high)) or x <= self.high
+        return lo_ok and hi_ok
 
     def ppf(self, q):
-        """
-        Inverse-CDF for a bounded Gaussian prior via a truncated normal.
-        """
-        a = (self.low - self.mean) / self.sig
-        b = (self.high - self.mean) / self.sig
-        return truncnorm.ppf(q, a, b, loc=self.mean, scale=self.sig)
-    
+        """Inverse-CDF.  Uses truncated normal when bounds are finite."""
+        if np.isfinite(self.low) and np.isfinite(self.high):
+            a = (self.low  - self.mean) / self.sig
+            b = (self.high - self.mean) / self.sig
+            return truncnorm.ppf(q, a, b, loc=self.mean, scale=self.sig)
+        return _norm.ppf(q, loc=self.mean, scale=self.sig)
+
     def to_dict(self):
-        return {
-            "type": "Gaussian",
-            "low": self.low,
-            "high": self.high,
-            "mean": self.mean,
-            "sigma": self.sig
-        }
+        d = {"type": "Gaussian", "mean": self.mean, "sigma": self.sig}
+        if np.isfinite(self.low):  d["low"]  = self.low
+        if np.isfinite(self.high): d["high"] = self.high
+        return d
 
 #------------------------------
 # Parameter Manager Class 

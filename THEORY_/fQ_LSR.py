@@ -81,14 +81,14 @@ class fQLSR(CosmologyModelBase):
             Parameter(
                 name="H0",
                 latex=r"H_0",
-                prior=GaussianPrior(low=50.0, high=90.0, mean=70.0, sig=5.0),
+                prior=GaussianPrior(mean=70.0, sig=5.0, low=50.0, high=90.0),
                 role="cosmo",
                 status="free"
             ),
             Parameter(
                 name="Omegam0",
                 latex=r'\Omega_{m0}',
-                prior=GaussianPrior(low=0.1, high=0.5, mean=0.3, sig=0.05),
+                prior=GaussianPrior(mean=0.3, sig=0.05, low=0.1, high=0.5),
                 role="cosmo",
                 status="free"
             ),

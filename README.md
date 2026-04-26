@@ -71,7 +71,6 @@ information criteria (AIC, BIC, DIC), and publication-quality figures.
 ```
 COSMIX/
 ├── run_cocoa.py          # Main entry point — reads input.yaml and runs the pipeline
-├── compare_runs.py       # Compare multiple completed runs side-by-side
 ├── Constants.py          # Physical constants (c, Omegar0)
 ├── input.yaml            # Template run configuration
 │
@@ -86,8 +85,6 @@ COSMIX/
 ├── DATA_/                # Observational data files
 │   └── PolyChordLite/    # Bundled PolyChord source (build separately)
 ├── RUNS_/                # Output directory (gitignored contents)
-├── TESTS_/               # Unit and integration tests
-└── FUTURE_/              # Skeleton likelihoods under development (GW, PINN)
 ```
 
 ---
@@ -119,6 +116,8 @@ COSMIX/
 | `SH0ES` | SH0ES H₀ Gaussian prior | Riess et al. |
 | `TRGB` | TRGB H₀ prior | Freedman et al. |
 | `H0LiCOW` | H0LiCOW H₀ prior | Wong et al. |
+| `CompCMB`| Compressed CMB | Z. Zhai and Y. Wang |
+| `Eg`| Eg Statistic | G. Alestas et al.|
 
 ---
 
