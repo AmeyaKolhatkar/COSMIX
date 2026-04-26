@@ -1,5 +1,7 @@
 # COSMIX — COSmological Modular Inference eXplorer
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19791571.svg)](https://doi.org/10.5281/zenodo.19791571)
+
 COSMIX is a modular, likelihood-driven Bayesian inference framework for testing
 modified gravity and dark energy cosmological models against observational data.
 It supports multiple samplers (emcee, Dynesty, PolyChord) and a growing library
@@ -152,3 +154,21 @@ COSMIX/
 
 This project is licensed under the **GNU General Public License v3.0**.
 See [LICENSE](LICENSE) for details.
+
+---
+
+## Citation
+
+If you use COSMIX in your research, please cite the following:
+
+```bibtex
+@software{kolhatkar_cosmix_2025,
+  author       = {Kolhatkar, Ameya},
+  title        = {{COSMIX: COSmological Modular Inference eXplorer}},
+  year         = 2025,
+  publisher    = {Zenodo},
+  version      = {v1.0.0},
+  doi          = {10.5281/zenodo.19791571},
+  url          = {https://doi.org/10.5281/zenodo.19791571}
+}
+```
