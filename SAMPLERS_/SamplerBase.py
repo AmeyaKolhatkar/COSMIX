@@ -107,18 +107,41 @@ class SamplerBase:
             return -lp if np.isfinite(lp) else 1e10
         
         safe_guess = self._find_valid_spawn(raw_guess, scales, bounds, objective)
-        
+
+        # Shift the objective to be zero at the starting point so that ftol
+        # remains a meaningful convergence criterion regardless of how large the
+        # log-likelihood normalization constants are (e.g. Pantheon+ stat+sys
+        # covariance inflates lnpost by ~65000).
+        #
+        # Method: Powell (not Nelder-Mead).
+        #   Nelder-Mead converges only when BOTH xatol AND fatol are satisfied
+        #   simultaneously.  When any parameter is unconstrained by the active
+        #   likelihoods (e.g. lambda0 in fQ_Hybrid with background-only data),
+        #   the posterior is flat in that direction.  The simplex never collapses
+        #   there → xatol is never met → Nelder-Mead exhausts all maxiter=3000
+        #   iterations, calling lnposterior ~6000 times (minutes of wall time).
+        #
+        #   Powell does line minimization along conjugate directions.  In a flat
+        #   direction the line search returns in 1–3 evaluations (any point is a
+        #   minimum), and Powell simply moves on.  It converges the remaining
+        #   active parameters in ~200–500 total evaluations instead of ~6000.
+        f0 = objective(safe_guess)
+        def shifted_objective(theta):
+            return objective(theta) - f0
+
         res = minimize(
-            objective,
+            shifted_objective,
             safe_guess,
-            method='Nelder-Mead',
+            method='Powell',
             bounds=bounds,
-            options={'xatol': 1e-3, 'fatol':1e-3, 'maxiter': 3000}
+            options={'ftol': 1e-4, 'xtol': 1e-4, 'maxiter': 500, 'maxfev': 3000}
         )
 
-        if res.success or res.fun < 1e5:
+        # res.fun is the shifted value; restore absolute for reporting
+        abs_fun = res.fun + f0
+        if res.success or abs_fun < 1e5:
             if self.verbose:
-                print(f"[SamplerBase] Optimizer found the MAP. Best-fit chi2 approx: {res.fun*2:.2f}")
+                print(f"[SamplerBase] Optimizer found the MAP. Best-fit -2*ln(posterior): {abs_fun*2:.2f}")
             return res.x
         else:
             if self.verbose:

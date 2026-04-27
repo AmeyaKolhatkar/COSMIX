@@ -48,7 +48,12 @@ class DynestySampler(NestedSamplerBase):
         logZ = res.logz[-1]
         logZ_err = res.logzerr[-1]
 
-        print(f"[DynestySampler] Sampling complete. Bayesian Evidence (logZ): {logZ:.3f} +/- {logZ_err:.3f}")
+        # Subtract likelihood normalization constants so the printed/stored logZ
+        # is the physical Bayesian evidence (independent of covariance normalizations).
+        norm = self.pipeline.norm_terms_total()
+        logZ_physical = logZ - norm
+
+        print(f"[DynestySampler] Sampling complete. log Evidence (logZ): {logZ_physical:.3f} +/- {logZ_err:.3f}")
 
         # extract equal weighted posterior samples for corner plots and parameter estimation
         weights = np.exp(res.logwt - res.logz[-1])
@@ -70,6 +75,7 @@ class DynestySampler(NestedSamplerBase):
             "log_prob": logl,
             "best_fit": best_fit,
             "logZ": logZ,
+            "logZ_physical": logZ_physical,
             "logZ_err": logZ_err,
             "raw_results": res
         }

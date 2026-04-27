@@ -82,6 +82,6 @@ class NestedStrategy(ConvergenceStrategy):
             "mode": "nested",
             "converged": True,
             "sampler": self.sampler.__class__.__name__,
-            "logZ": self._raw.get("logZ") if self._raw else None,
+            "logZ": self._raw.get("logZ_physical") if self._raw else None,
             "logZ_err": self._raw.get("logZ_err") if self._raw else None,
         }

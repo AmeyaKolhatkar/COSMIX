@@ -4,6 +4,7 @@ A RunManifest is created at the end of every run and saved to
 RUNS_/<run_id>/manifest.yaml.  It captures:
 
     run_id        — unique identifier string
+    input_config  — full contents of the input YAML (model, sampler, convergence, outputs)
     model         — model name and Python module path
     likelihoods   — list of likelihood names, modules, and options used
     labels        — parameter names (plain and LaTeX)
@@ -15,6 +16,19 @@ RUNS_/<run_id>/manifest.yaml.  It captures:
 
 Use RunArchive to write and read manifests from disk.
 """
+import sys
+import importlib.metadata
+
+_ENV_PACKAGES = ["numpy", "scipy", "emcee", "dynesty", "matplotlib", "pyyaml"]
+
+def _build_environment():
+    env = {"python": sys.version}
+    for pkg in _ENV_PACKAGES:
+        try:
+            env[pkg] = importlib.metadata.version(pkg)
+        except importlib.metadata.PackageNotFoundError:
+            env[pkg] = None
+    return env
 
 class RunManifest:
     def __init__(self, 
@@ -25,10 +39,12 @@ class RunManifest:
                  parameters: dict, 
                  sampler: dict, 
                  convergence: dict,
+                 input_config: dict=None,
                  environment: dict=None, 
                  diagnostics: dict=None):
         
         self.run_id = run_id
+        self.input_config = input_config or {}
         self.model = model
         self.likelihoods = likelihoods
         self.labels = labels
@@ -39,7 +55,7 @@ class RunManifest:
         self.diagnostics = diagnostics or {}
 
     @classmethod
-    def form_pipeline(cls, pipeline, sampler, convergence, results, run_id):
+    def form_pipeline(cls, pipeline, sampler, convergence, results, run_id, config=None):
         pm = pipeline.pm
 
         model_info = {
@@ -86,22 +102,26 @@ class RunManifest:
             "rhat": results.metadata.get("rhat") if hasattr(results, "metadata") else None,
             "logZ": results.metadata.get("logZ") if hasattr(results, "metadata") else None,
             "logZ_err": results.metadata.get("logZ_err") if hasattr(results, "metadata") else None,
+            "information_criteria": getattr(results, "_information_criteria", None),
         }
 
         return cls(
             run_id=run_id,
+            input_config=config,
             model=model_info,
             likelihoods=likelihood_info,
             labels=label_info,
             parameters=parameter_info,
             sampler=sampler_info,
             convergence=convergence,
+            environment=_build_environment(),
             diagnostics=diagnostics
         )
     
     def to_dict(self):
         return {
             "run_id": self.run_id,
+            "input_config": self.input_config,
             "model": self.model,
             "likelihoods": self.likelihoods,
             "labels": self.labels,

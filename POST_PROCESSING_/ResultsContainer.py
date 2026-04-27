@@ -205,13 +205,13 @@ class MCMCResults:
         if self.metadata.get("mode") == "nested":
             logZ     = self.metadata.get("logZ")
             logZ_err = self.metadata.get("logZ_err")
-            d["logZ"]     = logZ
-            d["logZ_err"] = logZ_err
+            d["logZ_raw"]  = logZ       # raw dynesty value (includes norm constants)
+            d["logZ_err"]  = logZ_err
             if pipeline is not None and logZ is not None:
                 norm = pipeline.norm_terms_total()
-                d["logZ_unnorm"]     = float(logZ)     - float(norm)
-                d["logZ_unnorm_err"] = logZ_err
-                d["norm_terms_total"] = float(norm)
+                d["logZ_physical"]     = float(logZ) - float(norm)   # physical Bayesian evidence
+                d["logZ_physical_err"] = logZ_err
+                d["norm_terms_total"]  = float(norm)
         return d
 
 def _serialize(x):

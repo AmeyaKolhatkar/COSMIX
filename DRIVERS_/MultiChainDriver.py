@@ -47,8 +47,8 @@ class MultiChainDriver:
         if hasattr(sampler, "p0") and sampler.p0 is not None:
             valid_p0 = []
 
-            if hasattr(sampler.pm, "proposal_scales"):
-                scales = [p.proposed_scales for p in sampler.pm.free_params]
+            if sampler.pm.free_params and hasattr(sampler.pm.free_params[0], "proposed_scale"):
+                scales = [p.proposed_scale for p in sampler.pm.free_params]
                 scale_array = np.array(scales)
             else:
                 scale_array = np.ones(sampler.ndim) * 1e-4
@@ -174,9 +174,12 @@ class MultiChainDriver:
                 # Build per-interval kwargs
                 chunk_kw = dict(run_kwargs)
                 chunk_kw["nsteps"] = check_every
-                # Burn-in only applies to the very first interval
-                if iteration > 0:
-                    chunk_kw["burn_in"] = 0
+                # Always suppress burn_in in continuous mode — the Pre-Flight
+                # Optimizer already places walkers near the MAP, so no burn-in
+                # is needed.  Inheriting burn_in from run_kwargs causes the first
+                # interval to run burn_in + check_every steps instead of just
+                # check_every, stalling the run invisibly.
+                chunk_kw["burn_in"] = 0
                 # Suppress per-chain progress bars — tqdm bar is the single indicator
                 chunk_kw["progress"] = False
 

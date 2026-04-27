@@ -170,23 +170,35 @@ def main(yaml_path):
         )
         strategy = NestedStrategy(sampler=sampler, pipeline=pipeline)
     else:
-        sampler = sampler_cls(
-            pm=pipeline.pm,
-            lnpost=pipeline.lnposterior,
-            nwalkers=None,
-            random_seed=init_config.get("random_seed")
-        )
-
         convergence_config = config.get("convergence", {"mode": "single"})
         mode = convergence_config["mode"]
 
         if mode == "single":
+            # Single chain: the sampler is used directly for sampling, so the
+            # Pre-Flight Optimizer must run here in the main process.
+            sampler = sampler_cls(
+                pm=pipeline.pm,
+                lnpost=pipeline.lnposterior,
+                nwalkers=None,
+                random_seed=init_config.get("random_seed")
+            )
             strategy = SingleChainStrategy(
                 sampler=sampler,
                 pipeline=pipeline,
                 run_kwargs=run_config
             )
         else:
+            # Multi-chain: the driver creates per-chain samplers internally and
+            # runs the Pre-Flight Optimizer once per chain in each subprocess.
+            # Creating a full sampler here would run a *redundant* optimizer in
+            # the main process (~15–30 s), stalling chain startup for no benefit.
+            # Instead, build a lightweight metadata stub used only for archiving.
+            class _SamplerRef:
+                pass
+            sampler = _SamplerRef()
+            sampler.__class__ = sampler_cls        # correct __class__.__name__
+            sampler.nwalkers = max(5 * pipeline.pm.ndim, 20)
+
             driver = MultiChainDriver(
                 sampler_cls=sampler_cls,
                 sampler_kwargs=dict(
@@ -281,7 +293,8 @@ def main(yaml_path):
             sampler=sampler,
             convergence=convergence_summary,
             results=mcmc_res,
-            run_id=run_id
+            run_id=run_id,
+            config=config
         )
         archive.save_manifest(manifest)
         archive.save_chains(mcmc_res)
