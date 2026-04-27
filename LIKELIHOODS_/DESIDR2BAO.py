@@ -112,6 +112,8 @@ class DESIDRIIBAO(LikelihoodBase):
         return A / B                            # r_d = 1 / s_MAP = A / B
 
     def marginalization_terms(self, theory):
+        if not self.pm.is_marginalized("rd"):
+            return None
         T = self._raw_theory_vec(theory)
         A = float(T @ self.inv_cov @ T)
         B = float(T @ self.inv_cov @ self.qty)

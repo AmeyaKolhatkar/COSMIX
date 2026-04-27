@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 
 try:
-    import pypolychord
+    import pypolychord 
     from pypolychord.settings import PolyChordSettings
     _POLYCHORD_AVAILABLE = True
 except ImportError:
@@ -47,10 +47,8 @@ class PolyChordSampler(NestedSamplerBase):
         file_root="polychord_run"
     ):
         if not _POLYCHORD_AVAILABLE:
-            raise ImportError(
-                "[PolyChordSampler] pypolychord is not installed. "
-                "Install it with: pip install -e DATA_/PolyChordLite"
-            )
+            raise ImportError("[PolyChordSampler] pypolychord is not installed."
+                              "Install it with : pip install -e DATA_/PolyChordLite")
         super().__init__(pm, pipeline)
         self.nlive = nlive if nlive is not None else 25 * self.ndim
         self.num_repeats = num_repeats if num_repeats is not None else 5 * self.ndim
