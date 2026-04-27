@@ -9,9 +9,26 @@ of likelihoods (CC, Pantheon+, DESI DR2 BAO, RSD, GW standard sirens, DES-SN5YR)
 
 ---
 
-## Quick Start
+## Installation
 
-### 1. Install dependencies
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/AmeyaKolhatkar/COSMIX.git
+cd COSMIX
+```
+
+For a specific tagged release (recommended for reproducible research):
+
+```bash
+git clone --branch v1.0.0 https://github.com/AmeyaKolhatkar/COSMIX.git
+cd COSMIX
+```
+
+Alternatively, a stable archived version is available via Zenodo:
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19791571.svg)](https://doi.org/10.5281/zenodo.19791571)
+
+### 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -26,7 +43,11 @@ pip install -e DATA_/PolyChordLite
 On **Windows** you will need [WinLibs/MinGW](https://winlibs.com/) with `gfortran`
 and ensure `<mingw64>/bin` is on your PATH (or set `POLYCHORD_DLL_DIR`).
 
-### 2. Configure a run
+---
+
+## Quick Start
+
+### 1. Configure a run
 
 Edit `input.yaml` (or copy it) to specify the model, datasets, sampler, and output options:
 
@@ -57,7 +78,7 @@ outputs:
   archive: true
 ```
 
-### 3. Run
+### 2. Run
 
 ```bash
 python run_cocoa.py input.yaml
