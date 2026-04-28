@@ -180,7 +180,8 @@ def main(yaml_path):
                 pm=pipeline.pm,
                 lnpost=pipeline.lnposterior,
                 nwalkers=None,
-                random_seed=init_config.get("random_seed")
+                random_seed=init_config.get("random_seed"),
+                norm_func=pipeline.norm_terms_total
             )
             strategy = SingleChainStrategy(
                 sampler=sampler,
@@ -205,7 +206,8 @@ def main(yaml_path):
                     pm=pipeline.pm,
                     lnpost=pipeline.lnposterior,
                     nwalkers=None,
-                    random_seed=init_config.get("random_seed", 42)
+                    random_seed=init_config.get("random_seed", 42),
+                    norm_func=pipeline.norm_terms_total
                 ),
                 nchains=convergence_config["nchains"],
                 ncores=convergence_config["ncores"]
@@ -254,6 +256,7 @@ def main(yaml_path):
         if logZ is not None:
             print(f"  logZ   : {logZ:.3f} +/- {logZ_err:.3f}")
     print("="*80)
+    #summary(results)
 
     if isinstance(results, MultiChainResults):
         mcmc_res = MCMCResults.from_multichain(results, pipeline, sampler_name)
@@ -264,6 +267,7 @@ def main(yaml_path):
     mcmc_viz = MCMCVisualization(pipeline, mcmc_res)
 
     IC = mcmc_res.information_criteria(pipeline)
+    mcmc_res.summary()
 
     # plots
     requested_plots = config["outputs"]["plots"]

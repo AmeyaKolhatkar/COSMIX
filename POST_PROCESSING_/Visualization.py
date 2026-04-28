@@ -17,6 +17,7 @@ from CORE_.RequirementResolver import single_requirement
 import matplotlib.pyplot as plt
 from getdist import MCSamples, plots
 import warnings
+import logging
 import numpy as np
 
 class MCMCVisualization:
@@ -66,13 +67,18 @@ class MCMCVisualization:
         labels_plot = [n for n, keep in zip(self.results.latex_names, varying) if keep]
 
         try:
+            _log = logging.getLogger()
+            _prev_level = _log.level
+            _log.setLevel(logging.ERROR)
             samples = MCSamples(samples=chain_plot, names=names_plot, labels=labels_plot)
             samples.updateSettings({'fine_bins': 150, 'fine_bins_2D': 50})
             g = plots.get_subplot_plotter()
             g.triangle_plot(samples, filled=True, title_limit=1)
+            _log.setLevel(_prev_level)
             fig = plt.gcf()
             return fig
         except Exception as e:
+            _log.setLevel(_prev_level)
             warnings.warn(f"[MCMCVisualization] Corner plot failed: {e}")
             fig, ax = plt.subplots()
             ax.text(0.5, 0.5, "Corner plot unavailable for this chain",

@@ -2,6 +2,7 @@
 
 from getdist import MCSamples, plots
 import matplotlib.pyplot as plt
+import logging
 import numpy as np
 
 class MultiRunVisualization:
@@ -16,14 +17,17 @@ class MultiRunVisualization:
             
     def _build_samples_list(self):
         samples_list = []
+        _log = logging.getLogger()
+        _prev_level = _log.level
+        _log.setLevel(logging.ERROR)
         for r in self.results_list:
-            s = MCSamples(samples=r.chain, 
-                          names=r.param_names, 
-                          labels=r.latex_names, 
-                          weights=getattr(r, "weights", None))            
+            s = MCSamples(samples=r.chain,
+                          names=r.param_names,
+                          labels=r.latex_names,
+                          weights=getattr(r, "weights", None))
             s.updateSettings({'fine_bins': 150, 'fine_bins_2D': 50})
             samples_list.append(s)
-        
+        _log.setLevel(_prev_level)
         return samples_list
 
     def corner_overlay(self, colors=None, filled=None, contour_ls=None, contour_lws=None, params=None, param_limits={},
@@ -50,9 +54,12 @@ class MultiRunVisualization:
         g.settings.axes_fontsize = axes_fontsize
         g.settings.lab_fontsize = label_fontsize
         g.settings.figure_legend_frame = figure_legend_frame
+        _log = logging.getLogger()
+        _prev_level = _log.level
+        _log.setLevel(logging.ERROR)
         g.triangle_plot(
-            self.samples_list, legend_loc="upper right", 
-            legend_labels=self.labels, 
+            self.samples_list, legend_loc="upper right",
+            legend_labels=self.labels,
             contour_colors=colors,
             filled=filled,
             contour_ls=contour_ls,
@@ -61,7 +68,7 @@ class MultiRunVisualization:
             params=params,
             param_limits=param_limits
         )
-
+        _log.setLevel(_prev_level)
         return g.fig
     
     def posterior_1d_overlays(self, param_name):
@@ -70,7 +77,11 @@ class MultiRunVisualization:
         
         plt.figure()
         g = plots.get_subplot_plotter()
+        _log = logging.getLogger()
+        _prev_level = _log.level
+        _log.setLevel(logging.ERROR)
         g.plot_1d(self.samples_list, param_name, legend_labels=self.labels)
+        _log.setLevel(_prev_level)
 
         fig = plt.gcf()
 

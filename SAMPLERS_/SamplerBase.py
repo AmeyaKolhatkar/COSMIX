@@ -26,11 +26,12 @@ class SamplerBase:
     Provides automated parameter extraction and Pre-flight MAP (Maximum A Posteriori) optimization
     capable of handling unbounded priors and fractured parameter spaces.
     """
-    def __init__(self, pm, lnpost, verbose=True):
+    def __init__(self, pm, lnpost, verbose=True, norm_func=None):
         self.pm = pm
         self.lnpost = lnpost
         self.ndim = len(self.pm.free_params)
         self.verbose = verbose
+        self._norm_func = norm_func   # optional callable: () -> float, for physical chi2 reporting
 
     def _get_dynamical_guess_and_bounds(self):
         """
@@ -118,7 +119,9 @@ class SamplerBase:
 
         if res.success or res.fun < 1e5:
             if self.verbose:
-                print(f"[SamplerBase] Optimizer found the MAP. Best-fit chi2 approx: {res.fun*2:.2f}")
+                norm = self._norm_func() if self._norm_func is not None else 0.0
+                chi2_physical = res.fun * 2 + 2.0 * norm
+                print(f"[SamplerBase] Optimizer found the MAP. Best-fit chi2 approx: {chi2_physical:.2f}")
             return res.x
         else:
             if self.verbose:

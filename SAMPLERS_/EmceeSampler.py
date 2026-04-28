@@ -34,8 +34,8 @@ class emceeSampler(SamplerBase):
         Seeds a local numpy Generator — does NOT mutate the global RNG state.
     """
 
-    def __init__(self, pm, lnpost, nwalkers=None, random_seed=None, moves=None, verbose=True, initial_walkers=None):
-        super().__init__(pm, lnpost, verbose=verbose)
+    def __init__(self, pm, lnpost, nwalkers=None, random_seed=None, moves=None, verbose=True, initial_walkers=None, norm_func=None):
+        super().__init__(pm, lnpost, verbose=verbose, norm_func=norm_func)
 
         if nwalkers is None:
             self.nwalkers = max(5*self.ndim, 20)

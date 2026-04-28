@@ -68,26 +68,31 @@ class MCMCResults:
         # lnL_max
         lnL_max = np.max(lnL_samples)
 
+        # chi2 minimum
+        chi2_min = -2.0 * lnL_max
+
         # dof
         dof = N - k
         # reduced chi2
-        chi2_red = -2.0 * lnL_max / dof
+        chi2_red = chi2_min / dof
         # AIC
-        AIC = -2.0 * lnL_max + 2.0 * k
+        AIC = chi2_min + 2.0 * k
         # BIC
-        BIC = -2.0 * lnL_max + k * np.log(N)
-        # DIC
+        BIC = chi2_min + k * np.log(N)
+        # DIC — anchor at the max-likelihood sample (consistent for both MCMC and
+        # nested sampling, since lnL_samples is computed the same way for both)
         D_samples = -2.0 * lnL_samples
         D_bar = np.mean(D_samples)
-        #theta_mean = self.mean
-        lnL_mean = pipeline.lnlike(self.best_fit) - norm_total
-        D_mean = -2.0 * lnL_mean
+        theta_mle = self.chain[np.argmax(lnL_samples)]
+        lnL_mle = pipeline.lnlike(theta_mle) - norm_total
+        D_mean = -2.0 * lnL_mle
         DIC = 2.0 * D_bar - D_mean
 
         IC = {
             "k": k,
             "N": N,
             "dof": dof,
+            "chi2_min": float(chi2_min),
             "reduced chi2": float(chi2_red),
             "AIC": float(AIC),
             "BIC": float(BIC),
@@ -98,19 +103,6 @@ class MCMCResults:
             self._information_criteria = IC
 
         return IC
-
-
-    def summary(self):
-        print(f"Sampler: {self.sampler_name}")
-        if self.acceptance is not None:
-            print(f"Acceptance fraction: {self.acceptance:.3f}")
-        print("-"*75)
-        for i, name in enumerate(self.param_names):
-            print(
-                f"{name:10s}"
-                f"{self.mean[i]:.4f} +- {self.std[i]:.4f}"
-                f"      Best: {self.best_fit[i]:.4f}"
-            )
 
     @property
     def lnL_max(self):
@@ -213,6 +205,28 @@ class MCMCResults:
                 d["logZ_physical_err"] = logZ_err
                 d["norm_terms_total"]  = float(norm)
         return d
+
+    def summary(self):
+        w = 80
+        print("="*w)
+        print(f"  Sampler : {self.sampler_name}")
+        print(f"  Model   : {self.metadata.get('model', '?')}")
+        print(f"  Data    : {', '.join(self.metadata.get('likelihoods', []))}")
+        if self.acceptance is not None:
+            print(f"  Accept  : {self.acceptance:.3f}")
+        print("-"*w)
+        print(f"  {'Parameter':<18}  {'Mean':>12}  {'Std':>12}  {'Best-fit':>12}")
+        print("-"*w)
+        for i, name in enumerate(self.param_names):
+            print(f"  {name:<18}  {self.mean[i]:>12.5f}  {self.std[i]:>12.5f}  {self.best_fit[i]:>12.5f}")
+        ic = getattr(self, "_information_criteria", None)
+        if ic is not None:
+            print("-"*w)
+            print(f"  chi2_min = {-2.0 * (-ic['AIC']/2 + ic['k']):.4f}   "
+                  f"red_chi2 = {ic['reduced chi2']:.6f}   "
+                  f"dof = {ic['dof']}")
+            print(f"  AIC = {ic['AIC']:.4f}    BIC = {ic['BIC']:.4f}    DIC = {ic['DIC']:.4f}")
+        print("="*w)
 
 def _serialize(x):
     if x is None:

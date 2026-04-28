@@ -34,7 +34,7 @@ class MultiChainDriver:
     def _make_sampler(self, chain_id, initial_walkers=None):
         kwargs = dict(self.sampler_kwargs)
         kwargs["random_seed"] = 1000 + chain_id
-        kwargs["verbose"] = False
+        kwargs["verbose"] = (chain_id == 0)  # chain 0 prints Pre-Flight chi2; others stay silent
 
         if initial_walkers is not None:
             # Resume from provided positions — skip Pre-Flight Optimizer
