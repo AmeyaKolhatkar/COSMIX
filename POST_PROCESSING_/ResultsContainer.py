@@ -21,7 +21,7 @@ class MCMCResults:
     """
     Container for MCMC output
     """
-    def __init__(self, chain, log_prob, tau, param_names, latex_names, sampler_name, acceptance=None, metadata=None):
+    def __init__(self, chain, log_prob, tau, param_names, latex_names, sampler_name, acceptance=None, metadata=None, weights=None):
         self.chain = np.asarray(chain)
         self.log_prob = np.asarray(log_prob)
         self.tau = None if tau is None else np.asarray(tau)
@@ -30,6 +30,8 @@ class MCMCResults:
         self.sampler_name = sampler_name
         self.acceptance = acceptance
         self.metadata = metadata or {}
+        # Importance weights for nested sampling dead points; None for MCMC (equal weights)
+        self.weights = None if weights is None else np.asarray(weights, dtype=float)
 
         self._validate()
         self._compute_basic_stats()
@@ -45,8 +47,13 @@ class MCMCResults:
     def _compute_basic_stats(self):
         idx = np.argmax(self.log_prob)
         self.best_fit = self.chain[idx]
-        self.mean = np.mean(self.chain, axis=0)
-        self.std = np.std(self.chain, axis=0)
+        if self.weights is not None:
+            w = self.weights / self.weights.sum()
+            self.mean = np.average(self.chain, weights=w, axis=0)
+            self.std  = np.sqrt(np.average((self.chain - self.mean)**2, weights=w, axis=0))
+        else:
+            self.mean = np.mean(self.chain, axis=0)
+            self.std  = np.std(self.chain, axis=0)
 
     def information_criteria(self, pipeline, store=True):
         # free parameters
@@ -82,7 +89,11 @@ class MCMCResults:
         # DIC — anchor at the max-likelihood sample (consistent for both MCMC and
         # nested sampling, since lnL_samples is computed the same way for both)
         D_samples = -2.0 * lnL_samples
-        D_bar = np.mean(D_samples)
+        if self.weights is not None:
+            w = self.weights / self.weights.sum()
+            D_bar = float(np.average(D_samples, weights=w))
+        else:
+            D_bar = float(np.mean(D_samples))
         theta_mle = self.chain[np.argmax(lnL_samples)]
         lnL_mle = pipeline.lnlike(theta_mle) - norm_total
         D_mean = -2.0 * lnL_mle
@@ -111,11 +122,15 @@ class MCMCResults:
     @property
     def ess(self):
         """
-        Effective Sample Size per parameter
+        Effective Sample Size.
+        - MCMC: computed from autocorrelation time tau (per parameter).
+        - Nested sampling: computed from importance weights as 1/sum(w^2).
         """
+        if self.weights is not None:
+            w = self.weights / self.weights.sum()
+            return float(1.0 / np.sum(w ** 2))
         if self.tau is None:
             return None
-    
         return self.chain.shape[0] / self.tau
     
     @classmethod
@@ -134,6 +149,7 @@ class MCMCResults:
             latex_names=pipeline.pm.free_latex,
             sampler_name=sampler_name,
             acceptance=None,
+            weights=results.get("weights"),
             metadata={
                 "model": pipeline.model.name,
                 "likelihoods": [L.name for L in pipeline.likelihoods],
@@ -220,9 +236,12 @@ class MCMCResults:
         for i, name in enumerate(self.param_names):
             print(f"  {name:<18}  {self.mean[i]:>12.5f}  {self.std[i]:>12.5f}  {self.best_fit[i]:>12.5f}")
         ic = getattr(self, "_information_criteria", None)
+        if self.weights is not None:
+            ess_val = self.ess
+            print(f"  ESS     : {ess_val:.0f}  (from {len(self.weights)} dead points)")
         if ic is not None:
             print("-"*w)
-            print(f"  chi2_min = {-2.0 * (-ic['AIC']/2 + ic['k']):.4f}   "
+            print(f"  chi2_min = {ic['chi2_min']:.4f}   "
                   f"red_chi2 = {ic['reduced chi2']:.6f}   "
                   f"dof = {ic['dof']}")
             print(f"  AIC = {ic['AIC']:.4f}    BIC = {ic['BIC']:.4f}    DIC = {ic['DIC']:.4f}")

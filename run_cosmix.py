@@ -36,6 +36,8 @@ from LIKELIHOODS_.H0priors import SH0ESprior, TRGBprior, H0LiCOWPrior
 from LIKELIHOODS_.RSD import RedshiftSpaceDistortion
 from LIKELIHOODS_.EgStatistic import EgStatistic
 from LIKELIHOODS_.CompressedCMB import CompressedCMB
+from LIKELIHOODS_.DESY5 import DESY5
+from LIKELIHOODS_.DESDovekie import DESDovekie
 
 from SAMPLERS_.EmceeSampler import emceeSampler
 from SAMPLERS_.DynestySampler import DynestySampler
@@ -76,7 +78,9 @@ LIKELIHOOD_REGISTRY = {
     "H0LiCOW": H0LiCOWPrior,
     "RSD": RedshiftSpaceDistortion,
     "Eg": EgStatistic,
-    "CompCMB": CompressedCMB
+    "CompCMB": CompressedCMB,
+    "D5": DESY5,
+    "Dovekie": DESDovekie
 }
 
 SAMPLER_REGISTRY = {

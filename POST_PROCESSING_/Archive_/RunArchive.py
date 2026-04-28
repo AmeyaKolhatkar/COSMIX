@@ -92,13 +92,17 @@ class RunArchive:
         YAML_dump(manifest_dict, self.run_dir / "manifest.yaml")
 
 
-    def save_arrays(self, chain, log_prob):
+    def save_arrays(self, chain, log_prob, weights=None):
         """
-        Saves arrays.npy and log_prob.npy assuming arrays are already validated
+        Saves chain.npy and log_prob.npy.  For nested-sampling runs, also saves
+        weights.npy when importance weights are provided — these are required by
+        the dataset-consistency / tension-probability analysis in DatasetTension.ipynb.
         """
         self._check_initialized()
         array_dump(chain, self.run_dir / "chain.npy")
         array_dump(log_prob, self.run_dir / "log_prob.npy")
+        if weights is not None:
+            array_dump(weights, self.run_dir / "weights.npy")
 
 
     def save_arrays_multi(self, mcres, indent=2):
@@ -116,7 +120,8 @@ class RunArchive:
         if hasattr(results, "chains"):
             self.save_arrays_multi(results)
         else:
-            self.save_arrays(results.chain, results.log_prob)
+            self.save_arrays(results.chain, results.log_prob,
+                             weights=getattr(results, "weights", None))
 
 
     def save_diagnostics(self, diagnostics):
