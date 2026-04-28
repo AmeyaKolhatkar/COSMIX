@@ -1,18 +1,24 @@
 # DESY5
 """
-DES-SN5YR / DES-Dovekie likelihood  (Vincenzi et al. 2024 / Abbott et al. 2024)
+DES-SN5YR likelihood  (Vincenzi et al. 2024 / Abbott et al. 2024)
+— LEGACY dataset: 1829 SNe from the original DES-SN5YR paper release —
 
 Data files (DATA_/DES-SN5YR/4_DISTANCES_COVMAT/)
-    DES-Dovekie_HD.csv  — 1820 distance moduli, redshifts (updated DES-Dovekie sample)
-    STAT+SYS.npz         — TOTAL (stat+sys) INVERSE covariance, stored as the upper
-                           triangle of a 1820×1820 matrix (keys at index 0: n_sn,
-                           index 1: upper-triangular values).  This is the format
-                           used by the DES-SN5YR repo after the DES-Dovekie update.
+    DES-SN5YR_HD+MetaData.csv  — 1829 distance moduli, redshifts, metadata
+    STAT+SYS.txt.gz             — systematic-only covariance in SNANA flat-text
+                                  format: first value is N, then N² matrix entries.
+                                  Statistical uncertainty lives in MUERR_FINAL and
+                                  is added to the diagonal:  C = C_sys + diag(σ²).
 
-Note: the DES collaboration updated the DES-SN5YR data release in early 2025 to
-reflect the DES-Dovekie reanalysis (corrected distances, 1820 SNe vs. original 1829).
-The old files (DES-SN5YR_HD+MetaData.csv, STAT+SYS.txt.gz) no longer exist in the
-upstream repository.  DESY5 now tracks this updated dataset.
+Note: the DES collaboration subsequently replaced these files in their GitHub repo
+with the DES-Dovekie reanalysis (1820 SNe, npz inverse covariance).  The legacy
+files are preserved locally for reproducibility.  For the current DES-Dovekie
+dataset use the DESDovekie likelihood instead.
+
+Slow-startup fix: STAT+SYS.txt.gz contains ~3.3 M whitespace-separated numbers.
+np.genfromtxt is very slow on this; we decompress to a raw string and call
+str.split() instead (~10× faster).  A binary .npy cache is also written next to
+the txt.gz on first load so that subsequent instantiations are near-instant.
 
 The nuisance parameter M (absolute magnitude / H0 offset) is analytically
 marginalized over a flat prior using the Conley et al. (2011) formula.
@@ -22,6 +28,7 @@ M and H0 are fully degenerate; do not use this sample alone to measure H0.
 #------------------------------
 # Preamble
 #------------------------------
+import gzip
 from pathlib import Path
 from CORE_.LikelihoodBase_ import LikelihoodBase, GaussMargTerm
 from CORE_.ParameterManager_ import Parameter, UniformPrior
@@ -29,34 +36,32 @@ import numpy as np
 import pandas as pd
 
 _DATA_DES = Path(__file__).resolve().parent.parent / "DATA_" / "DES-SN5YR" / "4_DISTANCES_COVMAT"
-Default_data_file = _DATA_DES / "DES-Dovekie_HD.csv"
-Default_cov_file  = _DATA_DES / "STAT+SYS.npz"
+Default_data_file = _DATA_DES / "DES-SN5YR_HD+MetaData.csv"
+Default_cov_file  = _DATA_DES / "STAT+SYS.txt.gz"
 
-def _read_snana_hd(filepath):
-    """Parse a SNANA-format Hubble diagram file into a pandas DataFrame.
 
-    The DES-Dovekie data release uses SNANA format:
-    - Lines starting with '#' are comments
-    - 'VARNAMES: col1 col2 ...' defines the column names
-    - 'SN: val1 val2 ...' lines are data rows
+def _load_snana_cov(txt_gz_path: Path) -> np.ndarray:
+    """Load a SNANA flat-text covariance matrix from a .txt.gz file.
+
+    Format: first whitespace-separated token is N (integer), followed by N²
+    float values forming the full N×N covariance matrix.
+
+    A binary .npy cache is written alongside the .gz on first load.  Subsequent
+    calls load the cache directly (~100× faster than re-parsing the text).
     """
-    col_names = None
-    rows = []
-    with open(filepath, 'r') as fh:
-        for line in fh:
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-            if line.startswith('VARNAMES:'):
-                col_names = line.split()[1:]
-            elif line.startswith('SN:'):
-                rows.append(line.split()[1:])
-    if col_names is None:
-        raise RuntimeError(f"No VARNAMES line found in {filepath}")
-    df = pd.DataFrame(rows, columns=col_names)
-    for col in ['zHD', 'zHEL', 'MU', 'MUERR']:
-        df[col] = pd.to_numeric(df[col])
-    return df
+    cache_path = txt_gz_path.with_suffix("").with_suffix(".npy")   # strip .gz then .txt → .npy
+
+    if cache_path.exists():
+        cov_flat = np.load(cache_path)
+    else:
+        print(f"[DESY5] Parsing {txt_gz_path.name} (first-time load, building cache) …")
+        with gzip.open(txt_gz_path, "rt") as fh:
+            cov_flat = np.array(fh.read().split(), dtype=np.float64)
+        np.save(cache_path, cov_flat)
+        print(f"[DESY5] Cache written to {cache_path.name}")
+
+    n = int(cov_flat[0])
+    return cov_flat[1:].reshape(n, n)
 
 
 class DESY5(LikelihoodBase):
@@ -69,47 +74,41 @@ class DESY5(LikelihoodBase):
         if cov_file is None:
             cov_file = Default_cov_file
 
-        self.data_file = data_file
-        self.cov_file  = cov_file
+        self.data_file = Path(data_file)
+        self.cov_file  = Path(cov_file)
 
         # ---- data vector ----
-        data = _read_snana_hd(self.data_file)
+        data = pd.read_csv(self.data_file)
         mask = data["zHD"].values > 0.0      # keep all SNe with positive redshift
         self.mask = mask
 
-        self.zCMB   = data["zHD"].values[mask]   # CMB-frame redshift (SNANA: zHD)
-        self.zHEL   = data["zHEL"].values[mask]  # heliocentric redshift
-        self.mu_obs = data["MU"].values[mask]     # observed distance modulus
-        # Note: column is now MUERR (not MUERR_FINAL as in the pre-Dovekie release)
-        self.mu_err = data["MUERR"].values[mask]  # per-SN distance uncertainty
+        self.zCMB   = data["zHD"].values[mask]          # CMB-frame redshift (SNANA: zHD)
+        self.zHEL   = data["zHEL"].values[mask]         # heliocentric redshift
+        self.mu_obs = data["MU"].values[mask]            # observed distance modulus
+        self.mu_err = data["MUERR_FINAL"].values[mask]  # per-SN statistical uncertainty
 
         N = len(self.mu_obs)
         self.N = N
 
         # ---- covariance ----
-        # STAT+SYS.npz stores the TOTAL (stat+sys) INVERSE covariance as the upper
-        # triangle of the full N×N matrix.  The DES-Dovekie update changed both the
-        # file format (txt.gz → npz) and the encoding (covariance → inverse covariance).
-        # Positional key access matches the official DES likelihood code exactly.
-        d        = np.load(self.cov_file)
-        n_cov    = int(d[d.files[0]][0])
-        inv_cov_full = np.zeros((n_cov, n_cov), dtype=float)
-        inv_cov_full[np.triu_indices(n_cov)] = d[d.files[1]].astype(float)
-        i_lower = np.tril_indices(n_cov, -1)
-        inv_cov_full[i_lower] = inv_cov_full.T[i_lower]   # symmetrize
+        # STAT+SYS.txt.gz contains the SYSTEMATIC-only covariance (C_sys).
+        # The total covariance is C = C_sys + diag(MUERR_FINAL²).
+        # See DATA_/DES-SN5YR/4_DISTANCES_COVMAT/README.md:
+        #   "STATONLY.txt.gz is filled with zeros because the statistical
+        #    uncertainties are included in MUERR_FINAL."
+        cov      = _load_snana_cov(self.cov_file)
+        mask_idx = np.where(mask)[0]
+        cov      = cov[np.ix_(mask_idx, mask_idx)]
+        np.fill_diagonal(cov, cov.diagonal() + self.mu_err ** 2)
 
-        # Apply boolean mask
-        mask_idx     = np.where(mask)[0]
-        self.inv_cov = inv_cov_full[np.ix_(mask_idx, mask_idx)]
+        self.cov     = cov
+        self.inv_cov = np.linalg.inv(cov)
 
-        # Full covariance (needed for per-point error bars in residual plots)
-        self.cov = np.linalg.inv(self.inv_cov)
-
-        # Normalization: logdet(C) = −logdet(C⁻¹), avoids redundant inversion.
-        sign_inv, logdet_inv = np.linalg.slogdet(self.inv_cov)
-        if sign_inv <= 0:
-            raise RuntimeError("DES-SN5YR: inverse covariance matrix not positive definite.")
-        self.ln_norm = 0.5 * logdet_inv - 0.5 * N * np.log(2.0 * np.pi)
+        # Normalization
+        sign, logdet = np.linalg.slogdet(self.cov)
+        if sign <= 0:
+            raise RuntimeError("DES-SN5YR (legacy): covariance matrix not positive definite.")
+        self.ln_norm = -0.5 * (logdet + N * np.log(2.0 * np.pi))
 
         self.ones = np.ones(N)
         self.data_size = N
