@@ -81,7 +81,7 @@ outputs:
 ### 2. Run
 
 ```bash
-python run_cocoa.py input.yaml
+python run_cosmix.py input.yaml
 ```
 
 Results are saved to `RUNS_/<run_id>/` including the chain, diagnostics,
@@ -93,7 +93,7 @@ information criteria (AIC, BIC, DIC), and publication-quality figures.
 
 ```
 COSMIX/
-├── run_cocoa.py          # Main entry point — reads input.yaml and runs the pipeline
+├── run_cosmix.py         # Main entry point — reads input.yaml and runs the pipeline
 ├── Constants.py          # Physical constants (c, Omegar0)
 ├── input.yaml            # Template run configuration
 │
@@ -148,7 +148,7 @@ COSMIX/
 
 1. Create `THEORY_/MyModel.py` inheriting from `CORE_.CosmologyModelBase`.
 2. Implement `declare_parameters()`, `check_physicality()`, and `get_requirements()`.
-3. Register it in `run_cocoa.py` (under `MODEL_REGISTRY`):
+3. Register it in `run_cosmix.py` (under `MODEL_REGISTRY`):
    ```python
    from THEORY_.MyModel import MyModel
    MODEL_REGISTRY["MyModel"] = MyModel
@@ -159,7 +159,7 @@ COSMIX/
 
 1. Create `LIKELIHOODS_/MyLikelihood.py` inheriting from `CORE_.LikelihoodBase_`.
 2. Implement `declare_parameters()`, `get_requirements()`, and `lnlike()`.
-3. Register it in `run_cocoa.py` under `LIKELIHOOD_REGISTRY`.
+3. Register it in `run_cosmix.py` under `LIKELIHOOD_REGISTRY`.
 
 ---
 
