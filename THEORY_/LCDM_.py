@@ -25,9 +25,9 @@ from Constants import c, Omegar0
 
 r = Omegar0  # kept for backward compatibility within this module
 
-#------------------------------
-# LCDM Class 
-#------------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+# LCDM
+# ══════════════════════════════════════════════════════════════════════════════
 class LCDM(CosmologyModelBase):
     name = "LCDM"
 
@@ -54,7 +54,7 @@ class LCDM(CosmologyModelBase):
     def background_config(self):
         return BackgroundConfig(
             z_max=3.0,
-            nz=500,
+            nz=150,
             integration_method="trapz"
         )
 

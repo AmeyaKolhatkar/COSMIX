@@ -9,10 +9,6 @@ Data files (DATA_/Pantheon/)
     Pantheon+SH0ES.dat          — distance moduli and redshifts
     Pantheon+SH0ES_STAT+SYS.cov — full statistical + systematic covariance
 """
-
-#------------------------------
-# Preamble 
-#------------------------------
 from pathlib import Path
 from CORE_.LikelihoodBase_ import LikelihoodBase, GaussMargTerm
 from CORE_.ParameterManager_ import Parameter, GaussianPrior, UniformPrior
@@ -23,9 +19,7 @@ _DATA_PP = Path(__file__).resolve().parent.parent / "DATA_" / "Pantheon"
 Default_data_file = _DATA_PP / "Pantheon+SH0ES.dat"
 Default_cov_file  = _DATA_PP / "Pantheon+SH0ES_STAT+SYS.cov"
 
-#------------------------------
-# PPS Class Skeleton 
-#------------------------------
+# ══════════════════════════════════════════════════════════════════════════════
 class Pantheonplus(LikelihoodBase):
     name="PP"
 

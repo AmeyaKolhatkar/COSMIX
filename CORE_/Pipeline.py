@@ -157,6 +157,8 @@ class Pipeline:
 
     def lnlike(self, theta):
         theory = self.model.compute_theory(theta, self.requirements)
+        if getattr(theory, "invalid", False):
+            return -np.inf
         lnL = sum( L.lnlike(theta, theory) for L in self.likelihoods )
         if not np.isfinite(lnL):
             return -np.inf

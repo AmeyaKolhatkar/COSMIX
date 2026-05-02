@@ -23,10 +23,6 @@ _DATA_DDTB = Path(__file__).resolve().parent.parent / "DATA_" / "DDTB"
 Default_data_file = _DATA_DDTB / "desi_gaussian_bao_ALL_GCcomb_mean.txt"
 Default_cov_file  = _DATA_DDTB / "desi_gaussian_bao_ALL_GCcomb_cov.txt"
 
-
-#------------------------------
-# DDTB Class Skeleton 
-#------------------------------
 class DESIDRIIBAO(LikelihoodBase):
     name="DDTB"
 

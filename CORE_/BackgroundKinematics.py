@@ -1,4 +1,3 @@
-# Background Observables class
 """
 Accepts H(z) and models parameters.
 
@@ -61,18 +60,19 @@ class BackgroundKinematics(ObservableEngineBase):
         z_low = np.linspace(0.0, self.config.z_max, self.config.nz)
 
         if getattr(self.config, "z_max_extended", None) is not None:
-            z_high = np.geomspace(self.config.z_max + 0.01, 1100.0, 2500)
+            nz_ext = getattr(self.config, "nz_extended", 600)
+            z_high = np.geomspace(self.config.z_max + 0.01, 1100.0, nz_ext)
             return np.concatenate((z_low, z_high))
 
         return z_low
     
     def _build_z_dense(self):
         """Dense grid that mirrors the sparse horizon for flawless np.interp."""
-        z_low_dense = np.linspace(0.0, self.config.z_max, 2000)
+        nz_dense = getattr(self.config, "nz_dense", 600)
+        z_low_dense = np.linspace(0.0, self.config.z_max, nz_dense)
         if getattr(self.config, "z_max_extended", None) is not None:
-            # We don't need 5000 points in the matter/rad era for smooth integration, 
-            # but we need enough to prevent interpolation errors.
-            z_high_dense = np.geomspace(self.config.z_max + 0.01, 1100.0, 2000)
+            nz_dense_ext = getattr(self.config, "nz_dense_extended", 600)
+            z_high_dense = np.geomspace(self.config.z_max + 0.01, 1100.0, nz_dense_ext)
             return np.concatenate((z_low_dense, z_high_dense))
         return z_low_dense
 

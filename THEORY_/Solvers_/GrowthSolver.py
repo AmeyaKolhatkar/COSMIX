@@ -1,4 +1,16 @@
-# Growth Solver
+"""GrowthSolver — fast RK4 integrator for the linear growth ODE.
+
+Solves
+
+    δ'' + (2 + d ln H / d ln a) δ' − 1.5 μ_G(z) Ω_m(z) δ = 0
+
+forward from N_ini = ln a_ini = −7 (z ≈ 1096) to N = 0 (z = 0) on a
+uniform grid of 250 steps.  The RK4 loop is JIT-compiled with Numba.
+
+After integration the solution is normalised so δ(z=0) = 1.  The raw
+(pre-normalisation) amplitude D(0) is stored as ``solver.unnorm_D0``
+for the implied-As diagnostic.
+"""
 
 import numpy as np
 from numba import njit
@@ -94,7 +106,11 @@ class GrowthSolver:
         norm = delta[-1]
         if not np.isfinite(norm) or norm <= 0:
             raise RuntimeError("[GrowthSolver] Growth integration diverged --- invalid parameter space!")
-        
+
+        # Expose the raw (unnormalized) growth amplitude D(z=0) before dividing it out.
+        # Diagnostic use: As_implied ∝ (sigma80_fit / sigma80_ref)² × (D_ref / D_model)²
+        self.unnorm_D0 = norm
+
         delta /= norm
         ddelta /= norm
 

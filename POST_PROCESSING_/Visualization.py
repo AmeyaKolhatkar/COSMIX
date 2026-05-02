@@ -1,15 +1,15 @@
-# Visualization
-"""
-Responsibilities
-    1. Trace Plots
-        - It is just parameter value (y-axis) vs sampling step (x_axis) for each free parameter
+"""Visualization — post-processing plots for COSMIX MCMC/nested-sampling results.
 
-    2. Corner/Triangle Plots
-        - Useful for parameter correlation
+Provides four plot families via MCMCVisualization:
 
-    3. Residual Plots vs Redshift
-        - Model adequacy
-    4. H(z) / dL(z) / fs8(z) etc. curves 
+    trace()     — parameter value vs sample index for each free parameter.
+    corner()    — triangle plot of the joint posterior (via GetDist).
+    residual()  — (data − theory) / σ for each likelihood, vs redshift
+                   or named parameter index.
+    plot_H()    — best-fit H(z) curve with optional posterior band.
+    plot_dL()   — best-fit d_L(z) curve with optional posterior band.
+    plot_fsigma8() — best-fit fσ₈(z) curve with optional posterior band.
+    plot_Eg()   — best-fit E_G(z) curve with optional posterior band.
 """
 from CORE_.Pipeline import Pipeline
 from POST_PROCESSING_.ResultsContainer import MCMCResults
@@ -43,6 +43,7 @@ class MCMCVisualization:
 
     def corner(self):
         chain = np.asarray(self.results.chain)
+        weights = self.results.weights  # None for MCMC; importance weights for nested sampling
         if chain.ndim != 2 or chain.shape[0] < 10:
             warnings.warn(
                 f"[MCMCVisualization] Only {len(chain)} posterior samples available; "
@@ -54,7 +55,13 @@ class MCMCVisualization:
             return fig
 
         # GetDist cannot build a triangle plot when all parameters are effectively fixed.
-        varying = np.std(chain, axis=0) > 0
+        # For nested sampling use weighted std; for MCMC use plain std.
+        if weights is not None:
+            w = weights / weights.sum()
+            wt_mean = np.average(chain, weights=w, axis=0)
+            varying = np.sqrt(np.average((chain - wt_mean)**2, weights=w, axis=0)) > 0
+        else:
+            varying = np.std(chain, axis=0) > 0
         if np.count_nonzero(varying) < 1:
             warnings.warn("[MCMCVisualization] No varying parameters in chain; skipping corner plot.")
             fig, ax = plt.subplots()
@@ -62,16 +69,22 @@ class MCMCVisualization:
                     ha='center', va='center', transform=ax.transAxes)
             return fig
 
-        chain_plot = chain[:, varying]
-        names_plot = [n for n, keep in zip(self.results.param_names, varying) if keep]
-        labels_plot = [n for n, keep in zip(self.results.latex_names, varying) if keep]
+        chain_plot   = chain[:, varying]
+        names_plot   = [n for n, keep in zip(self.results.param_names, varying) if keep]
+        labels_plot  = [n for n, keep in zip(self.results.latex_names, varying) if keep]
+        weights_plot = weights  # None for MCMC → equal-weight; array for nested → weighted KDE
 
         try:
             _log = logging.getLogger()
             _prev_level = _log.level
             _log.setLevel(logging.ERROR)
-            samples = MCSamples(samples=chain_plot, names=names_plot, labels=labels_plot)
-            samples.updateSettings({'fine_bins': 150, 'fine_bins_2D': 50})
+            # Pass importance weights so GetDist's KDE respects the posterior measure.
+            # Cobaya/PolyChord standard: MCSamples(weights=...) with all dead points.
+            # fine_bins / fine_bins_2D use GetDist defaults (1024) — the previous values
+            # of 150/50 produced a 50×50-pixel 2D KDE grid, which is the primary cause
+            # of jagged contours independent of sample count.
+            samples = MCSamples(samples=chain_plot, names=names_plot, labels=labels_plot,
+                                weights=weights_plot)
             g = plots.get_subplot_plotter()
             g.triangle_plot(samples, filled=True, title_limit=1)
             _log.setLevel(_prev_level)
@@ -111,11 +124,24 @@ class MCMCVisualization:
         res_likelihoods = [L for L in likelihoods if getattr(L, "produce_residuals", False)]
         nlik = len(res_likelihoods)
 
-        fig, axes = plt.subplots(nlik, 1, sharex=True, figsize=(8, 2*nlik))    
+        # Give panels with many named tick labels extra vertical space
+        _panel_heights = []
+        for L in res_likelihoods:
+            nlabels = len(getattr(L, '_param_labels', []))
+            _panel_heights.append(3.5 if nlabels > 8 else 2.0)
+        fig_height = sum(_panel_heights)
+        fig_width  = max(10, max(len(getattr(L, '_param_labels', [])) * 0.55
+                                 for L in res_likelihoods))
+
+        fig, axes = plt.subplots(
+            nlik, 1,
+            figsize=(fig_width, fig_height),
+            gridspec_kw={"height_ratios": _panel_heights}
+        )
         if nlik == 1:
             axes = [axes]
 
-        for ax, L in zip(axes, res_likelihoods): 
+        for ax, L in zip(axes, res_likelihoods):
             comp_dict = L.get_theory_components(theta, theory)
             for obs, (x, d_vec, th_vec, sigma) in comp_dict.items():
                 res_vec = d_vec - th_vec
@@ -125,12 +151,24 @@ class MCMCVisualization:
                     res_vec = res_vec / sigma
 
                 ax.axhline(0, color='k', lw=0.5)
-                ax.errorbar(x, res_vec, yerr=sigma, fmt='+', ecolor='crimson', ms=3, color='k', capsize=1.2, mec='k', elinewidth=0.7)
+                ax.errorbar(x, res_vec, yerr=sigma, fmt='+', ecolor='crimson',
+                            ms=3, color='k', capsize=1.2, mec='k', elinewidth=0.7)
                 ax.set_ylabel(L.name)
-                ax.set_xlabel(r"Redshift ($z$)")
-            
+                # Likelihoods with named scalar parameters (e.g. CompCMB, SDSSDR16)
+                # store _param_labels; use numeric x-indices and rotate labels.
+                if hasattr(L, '_param_labels'):
+                    ax.set_xticks(x)
+                    nlabels = len(L._param_labels)
+                    rotation = 45 if nlabels > 6 else 0
+                    ha       = 'right' if nlabels > 6 else 'center'
+                    ax.set_xticklabels(L._param_labels, rotation=rotation,
+                                       ha=ha, fontsize=7)
+                    ax.set_xlabel("")
+                else:
+                    ax.set_xlabel(r"Redshift ($z$)")
+
         plt.tight_layout()
-        
+
         return fig
 
     def plot_H(self, kind="bestfit", posterior_bands=False, nsamples=100):

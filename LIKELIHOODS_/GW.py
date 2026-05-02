@@ -1,84 +1,23 @@
-# GW Likelihood
+"""GW — gravitational-wave standard-siren distance likelihood.
+
+Layered architecture (active layer set in the class body):
+
+  Layer 0 — ideal standard sirens: Gaussian in d_L(z), no selection effects.
+             Useful for architecture validation and H0 inference tests.
+
+  Layer 1 — entry-level corrections: asymmetric distance posteriors from
+             LVK summaries (log-normal or skewed likelihoods in d_L).
+
+  Layer 2 — selection effects: detector-sensitivity-weighted likelihood
+             normalization via LVK injection campaigns.  Introduces
+             hyperparameters and Monte Carlo integrals.
+
+  Layer 3 — dark sirens: statistical host identification using galaxy
+             catalogs with completeness modeling and sky localization.
+
+  Layer 4 — modified gravity: d_L^GW vs d_L^EM splitting, friction terms,
+             running Planck mass; implemented via a GWKinematics engine layer.
 """
-==================================================================
-LAYER 0
-==================================================================
-
-Ideal standard sirens
-    similar to implementing SNeIa data using dL(z) without host corrections.
-
-This ignores:
-    - Selection effects
-    - Population distributions
-    - Detector sensitivity
-    - Inclination bias
-    - Malmquist bias
-
-Useful for:
-    - Validating architecture, distance plumbing, and H0 inference.
-
-==================================================================
-LAYER 1
-==================================================================
-
-Entry level bias corrections
-
-The following things get added
-    - Use LVK provided posterior summaries like - asymmetric distance errors nad marginalized distance posteriors
-    - Possibly log-normal or skewed likelihoods in dL
-
-==================================================================
-LAYER 2
-==================================================================
-
-Selection Effects (ADVANCED)
-
-The selection function modifies the likelihood. The function itself depends on
-    - detector sensitiity,
-    - population model,
-    - cosmology.
-
-This introduces 
-    - Hyperparameters
-    - Monte Carlo Integrals
-    - Strong Priors
-
-Implementation
-    - as a normalization term
-    - cached and reused
-    - using LVK injection campaigns
-
-==================================================================
-LAYER 3
-==================================================================
-
-Dark Sirens (Statistical Hosts)
-
-Requires
-    - Galaxy Catalogs
-    - completeness modeling
-    - sky localization
-
-==================================================================
-LAYER 4
-==================================================================
-
-Modified Gravity effects
-
-Introduction of 
-    - dL_GW vs dL_EM
-    - friction terms
-    - running Planck mass
-    - theory dependent propagation
-
-Will add 
-    - a new GWKinematics layer without changing the likelihood structure and the selection formalism
-
-"""
-
-#------------------------------
-# Preamble 
-#------------------------------
 from CORE_.LikelihoodBase_ import LikelihoodBase
 import numpy as np
 import pandas as pd

@@ -1,0 +1,19 @@
+# Python source — normalize to LF in repo
+*.py text eol=lf
+
+# Data files — store as-is, no line ending conversion
+*.txt text eol=lf
+*.dat text eol=lf
+*.csv text eol=lf
+*.npy binary
+*.npz binary
+
+# Notebooks
+*.ipynb text eol=lf
+
+# YAML/config
+*.yaml text eol=lf
+*.yml  text eol=lf
+
+# PDFs
+*.pdf binary

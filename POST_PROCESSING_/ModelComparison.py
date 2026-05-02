@@ -1,8 +1,10 @@
-# Model Comparison
-"""
+"""ModelComparison — information criteria and model comparison utilities.
+
 Responsibilities
-    1. All the Information Criterion - AIC/AICc/BIC/DIC
-    2. reduced chi2 / chi2 per degree of freedom
+----------------
+1. Information criteria: AIC, AICc, BIC, DIC
+2. Reduced chi2 / chi2 per degree of freedom
+3. Delta-IC tables comparing models against a reference
 """
 import numpy as np
 

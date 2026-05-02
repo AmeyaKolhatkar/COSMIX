@@ -1,4 +1,13 @@
-# Convergenge Strategy Base Class
+"""ConvergenceStrategy — abstract base class for all run-and-convergence strategies.
+
+Defines the single required interface:
+
+    run() → MCMCResults | MultiChainResults
+
+Concrete strategies (SingleChainStrategy, MultiFixedStrategy,
+MultiAutoConvergence) implement the run logic and convergence criteria
+appropriate for their sampler type.
+"""
 
 from abc import ABC, abstractmethod
 

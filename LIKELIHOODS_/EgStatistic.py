@@ -1,4 +1,16 @@
-# Eg Statistic Likelihood
+"""EgStatistic — E_G(z) statistic likelihood from galaxy surveys.
+
+The E_G statistic is defined as:
+
+    E_G(z) = Ω_{m0} / f(z)
+
+where f(z) = d ln D / d ln a is the logarithmic growth rate.  Because
+σ_80 cancels in the ratio, E_G constrains Ω_m and the growth-rate shape
+but is insensitive to the amplitude σ_80.
+
+Data file: DATA_/Eg_statistic/eg_statistic.xlsx
+  Columns: z, Eg, Eg_err
+"""
 
 from pathlib import Path
 from CORE_.LikelihoodBase_ import LikelihoodBase, GaussMargTerm

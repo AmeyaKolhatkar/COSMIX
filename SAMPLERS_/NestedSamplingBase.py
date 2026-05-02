@@ -1,4 +1,10 @@
-# Nested Sampling Base Class
+"""NestedSamplingBase — shared infrastructure for nested samplers.
+
+Inherits from SamplerBase and overrides MCMC-specific methods so that
+Dynesty, PolyChord, and any future nested sampler only need to implement
+their own ``run()`` method.  Separates the lnlike and prior-transform
+evaluations which nested sampling handles differently from MCMC.
+"""
 
 import numpy as np
 from SAMPLERS_.SamplerBase import SamplerBase

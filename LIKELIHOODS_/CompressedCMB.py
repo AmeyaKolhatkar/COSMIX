@@ -232,7 +232,11 @@ class CompressedCMB(LikelihoodBase):
         la_model = np.pi * chi_star / rs_star
 
         th_vec   = np.array([R_model, la_model, omega_b, n_s])
-        labels   = np.array(["R", "l_a", "omega_b", "n_s"])
+        labels   = ["R", r"$l_a$", r"$\omega_b$", r"$n_s$"]
         sigma    = np.sqrt(np.diag(np.linalg.inv(self.inv_cov)))
 
-        return {"CMB": (labels, self.d_vec, th_vec, sigma)}
+        # Return numeric indices as x so the residual plot doesn't create a
+        # categorical axis that would corrupt shared-axis panels.
+        # _param_labels is read by Visualization.residual() for tick labeling.
+        self._param_labels = labels
+        return {"CMB": (np.arange(len(labels), dtype=float), self.d_vec, th_vec, sigma)}

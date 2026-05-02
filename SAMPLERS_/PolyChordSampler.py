@@ -1,4 +1,18 @@
-# PolyChord Sampler
+"""PolyChordSampler — PolyChordLite nested sampler wrapper.
+
+PolyChord uses slice sampling within nested sampling to efficiently
+explore posteriors with pronounced degeneracies and curving parameter
+spaces.  It is especially well-suited to high-dimensional problems
+(> 20 parameters) where Dynesty may struggle.
+
+Requires the optional dependency pypolychord.  If not installed the
+class is still importable but instantiation will raise ImportError.
+
+Typical usage
+-------------
+sampler = PolyChordSampler(pm=pipeline.pm, pipeline=pipeline, nlive=500)
+result  = sampler.run()
+"""
 
 import numpy as np
 from pathlib import Path

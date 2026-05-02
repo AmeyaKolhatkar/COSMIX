@@ -38,14 +38,28 @@ class emceeSampler(SamplerBase):
         super().__init__(pm, lnpost, verbose=verbose, norm_func=norm_func)
 
         if nwalkers is None:
-            self.nwalkers = max(5*self.ndim, 20)
+            # DEMove needs ndim+1 complementary walkers; 3×ndim gives a
+            # comfortable margin while cutting per-step cost vs the old 5×ndim.
+            self.nwalkers = max(3*self.ndim, 20)
         else:
             self.nwalkers = nwalkers
 
         # Local Generator — never touches the global numpy RNG state
         self._rng = np.random.default_rng(random_seed)
-        # None → emcee defaults to StretchMove
-        self._moves = moves
+
+        # Default: 80% DEMove + 20% DESnookerMove.
+        # StretchMove (emcee default) fails on correlated posteriors — all walkers
+        # collapse into the degenerate valley and the stretch scale is wrong.
+        # DEMove uses differential vectors between random walker pairs, so it
+        # adapts to the actual posterior covariance (including tight correlations
+        # like sigma80–lambda0).  DESnookerMove adds out-of-plane exploration.
+        if moves is None:
+            self._moves = [
+                (emcee.moves.DEMove(),        0.8),
+                (emcee.moves.DESnookerMove(), 0.2),
+            ]
+        else:
+            self._moves = moves
 
         if initial_walkers is not None:
             # Resume from provided walker positions — skip Pre-Flight Optimizer
@@ -71,7 +85,7 @@ class emceeSampler(SamplerBase):
         if self.verbose:
             print("[EmceeSampler] Deploying walkers . . .")
         while len(p0) < self.nwalkers and attempts < max_attempts:
-            cand = best_fit + scales * 1e-2 * self._rng.standard_normal(self.ndim)
+            cand = best_fit + scales * 0.5 * self._rng.standard_normal(self.ndim)
 
             # hard bounds from Parameter Manager
             valid = True
@@ -102,16 +116,21 @@ class emceeSampler(SamplerBase):
         )
 
         # Phase 1: burn-in — reset afterwards so τ is computed on production chain only
+        # progress and prints are gated behind verbose so that only chain 0 produces
+        # output when running in parallel — avoids interleaved tqdm bars from subprocesses
+        _show = progress and self.verbose
         if burn_in > 0:
             if self.verbose:
                 print(f"[EmceeSampler] Running {burn_in} burn-in steps . . .")
-            state = self._sampler.run_mcmc(self.p0, burn_in, progress=False)
+            state = self._sampler.run_mcmc(self.p0, burn_in, progress=_show)
             self._sampler.reset()
+            if self.verbose:
+                print(f"[EmceeSampler] Burn-in complete. Starting production chain . . .")
         else:
             state = self.p0
 
         # Phase 2: production run
-        self._sampler.run_mcmc(state, nsteps, progress=progress)
+        self._sampler.run_mcmc(state, nsteps, progress=_show)
 
         chain    = self._sampler.get_chain(flat=True)
         log_prob = self._sampler.get_log_prob(flat=True)

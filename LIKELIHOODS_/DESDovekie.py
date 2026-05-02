@@ -1,7 +1,7 @@
-"""
-DES-Dovekie likelihood  (Vincenzi et al. 2024, DES-SN5YR cosmological analysis)
+"""DESDovekie — DES-Dovekie Type Ia supernova likelihood.
 
-Data files (DATA_/DES-Dovekie/)
+Vincenzi et al. 2024, DES-SN5YR cosmological analysis.  1820 SNe with
+BEAMS probabilities and pre-inverted total covariance matrix.
     DES-Dovekie_HD.csv       — 1820 distance moduli, redshifts, BEAMS probs
     covtot_inv_000.npz       — TOTAL (stat+sys) INVERSE covariance, stored as
                                the upper triangle of a 1820×1820 matrix in a
@@ -11,10 +11,6 @@ The nuisance parameter M (absolute magnitude / H0 offset) is analytically
 marginalized over a flat prior using the Conley et al. (2011) formula.
 M and H0 are fully degenerate; do not use this sample alone to measure H0.
 """
-
-#------------------------------
-# Preamble 
-#------------------------------
 from pathlib import Path
 from CORE_.LikelihoodBase_ import LikelihoodBase, GaussMargTerm
 from CORE_.ParameterManager_ import Parameter, GaussianPrior, UniformPrior
@@ -25,9 +21,7 @@ _DATA_D5Dovekie = Path(__file__).resolve().parent.parent / "DATA_" / "DES-Doveki
 Default_data_file = _DATA_D5Dovekie / "DES-Dovekie_HD.csv"
 Default_cov_file  = _DATA_D5Dovekie / "covtot_inv_000.npz"
 
-#------------------------------
-# PPS Class Skeleton 
-#------------------------------ 
+# ══════════════════════════════════════════════════════════════════════════════
 class DESDovekie(LikelihoodBase):
     name="D5Dovekie"
 
@@ -49,6 +43,11 @@ class DESDovekie(LikelihoodBase):
         self.zCMB   = data["zHD"].values[mask]   # CMB-frame redshift (SNANA: zHD)
         self.zHEL   = data["zHEL"].values[mask]  # heliocentric redshift
         self.mu_obs = data["MU"].values[mask]     # observed distance modulus
+
+        # BEAMS plot mask: exclude likely contaminants (PIa < 0.5) from visualization.
+        # PROBIA_BEAMS is the probability of being a Type Ia SN.
+        # This mask does NOT affect the likelihood — all SNe are used in sampling.
+        self._plot_mask = data["PROBIA_BEAMS"].values[mask] > 0.5
 
         # ---- covariance ----
         # covtot_inv_000.npz stores the INVERSE covariance as the upper triangle
@@ -79,6 +78,11 @@ class DESDovekie(LikelihoodBase):
         self.data_size      = N
         self.produce_residuals = True
 
+        # Precompute Conley marginalization constants (theta-independent)
+        # q = C^{-1} · 1  →  A = 1^T q (scalar), B = q · res (O(N) dot per call)
+        self._q        = self.inv_cov @ self.ones        # shape (N,)
+        self._A_conley = float(self.ones @ self._q)      # scalar constant
+
     @classmethod
     def declare_parameters(cls):
         return [
@@ -107,9 +111,8 @@ class DESDovekie(LikelihoodBase):
         factor = (1.0 + self.zHEL) / (1.0 + self.zCMB)
         mu_th = 5.0 * np.log10(factor * dL) + 25.0
         res = self.mu_obs - mu_th
-        A = float(self.ones @ self.inv_cov @ self.ones)
-        B = float(self.ones @ self.inv_cov @ res)
-        return GaussMargTerm("M", A=A, B=B, ln_norm=0.0)
+        B = float(self._q @ res)
+        return GaussMargTerm("M", A=self._A_conley, B=B, ln_norm=0.0)
     
     def lnlike(self, theta, theory):
         dL = theory.eval("dL", self.zCMB)
@@ -140,9 +143,7 @@ class DESDovekie(LikelihoodBase):
     def _map_M(self, mu_th_noM):
         """Return MAP value of M when it is marginalized (B/A from Gaussian integral)."""
         r = self.mu_obs - mu_th_noM
-        A = float(self.ones @ self.inv_cov @ self.ones)
-        B = float(self.ones @ self.inv_cov @ r)
-        return B / A
+        return float(self._q @ r) / self._A_conley
 
     def get_theory_components(self, theta, theory, z_override=None):
         dL_data = theory.eval("dL", self.zCMB)
@@ -155,11 +156,12 @@ class DESDovekie(LikelihoodBase):
             M = self.pm.get_value(theta, "M")
 
         if z_override is None:
+            pm = self._plot_mask
             x = self.zCMB
             d_vec = self.mu_obs
             th_vec = mu_th_noM + M
             sigma = np.sqrt(np.diag(self.cov))
-            return {"mu": (x, d_vec, th_vec, sigma)}
+            return {"mu": (x[pm], d_vec[pm], th_vec[pm], sigma[pm])}
         else:
             x = z_override
             dL = theory.eval("dL", x)

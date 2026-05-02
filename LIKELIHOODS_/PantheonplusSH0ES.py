@@ -9,10 +9,6 @@ Use Pantheonplus (+ optional SH0ESprior) for more flexibility.
 
 Data files: same as Pantheonplus (DATA_/Pantheon/).
 """
-
-#------------------------------
-# Preamble 
-#------------------------------
 from pathlib import Path
 from CORE_.LikelihoodBase_ import LikelihoodBase, GaussMargTerm
 from CORE_.ParameterManager_ import Parameter, GaussianPrior, UniformPrior
@@ -24,9 +20,7 @@ Default_data_file = _DATA_PP / "Pantheon+SH0ES.dat"
 Default_cov_file  = _DATA_PP / "Pantheon+SH0ES_STAT+SYS.cov"
 
 
-#------------------------------
-# PPS Class Skeleton 
-#------------------------------
+# ══════════════════════════════════════════════════════════════════════════════
 class PantheonplusSH0ES(LikelihoodBase):
     name="PPS"
 

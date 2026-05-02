@@ -19,16 +19,13 @@ GaussianPrior — truncated Gaussian prior (supports ppf for nested sampling).
 ParameterManager — aggregates Parameter objects and exposes the API above.
 """
 
-#------------------------------
-# Preamble 
-#------------------------------
 import numpy as np
 from scipy.stats import truncnorm, norm as _norm
 
 
-#------------------------------
-# Parameter Class 
-#------------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+# Parameter
+# ══════════════════════════════════════════════════════════════════════════════
 class Parameter:                                                        # This is only the minimal version
     def __init__(self, name, latex, prior, role, status="free", value=None, proposed_scale=0.05):     #  __init__ is a constructor which runs as the object is created
         self.name = name                                                # self refers to the specified parameter
@@ -40,9 +37,9 @@ class Parameter:                                                        # This i
         self.proposed_scale = proposed_scale       
 
 
-#------------------------------
-# Prior Class 
-#------------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+# Prior
+# ══════════════════════════════════════════════════════════════════════════════
 class Prior:
     def lnprob(self, x):
         raise NotImplementedError           # Every prior must define lnprob otherwise python will complain using NotImplementedError
@@ -54,9 +51,9 @@ class Prior:
     def to_dict(self):
         return None
 
-#------------------------------
-# Uniform Prior Class 
-#------------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+# UniformPrior
+# ══════════════════════════════════════════════════════════════════════════════
 class UniformPrior(Prior):
     def __init__(self, low, high):
         self.low = low
@@ -87,9 +84,9 @@ class UniformPrior(Prior):
             "high": self.high
         }
 
-#------------------------------
-# Gaussian Prior Class 
-#------------------------------    
+# ══════════════════════════════════════════════════════════════════════════════
+# GaussianPrior
+# ══════════════════════════════════════════════════════════════════════════════
 class GaussianPrior(Prior):
     """Gaussian prior.  Bounds are optional (default: unbounded).
 
@@ -128,9 +125,9 @@ class GaussianPrior(Prior):
         if np.isfinite(self.high): d["high"] = self.high
         return d
 
-#------------------------------
-# Parameter Manager Class 
-#------------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+# ParameterManager
+# ══════════════════════════════════════════════════════════════════════════════
 class ParameterManager:
     def __init__(self):
         self._parameters = []               # ordered list - hence [] - of Parameter objects including free, fixed and marginalized 

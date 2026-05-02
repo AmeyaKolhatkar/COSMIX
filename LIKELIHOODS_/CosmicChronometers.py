@@ -27,9 +27,9 @@ Default_data_cor_file = _DATA_CC / "CCcovariance" / "data" / "data_MM20.dat"
 Default_Hz_cor_file   = _DATA_CC / "CCcovariance" / "data" / "HzTable_MM_BC03.dat"
 
 
-#------------------------------
-# CC Class Skeleton 
-#------------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+# CosmicChronometers
+# ══════════════════════════════════════════════════════════════════════════════
 class CosmicChronometers(LikelihoodBase):
     name="CC"
 

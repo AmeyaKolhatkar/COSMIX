@@ -20,9 +20,9 @@ dL_at_z = theory.eval("dL", z_target)   # interpolates if needed
 import numpy as np
 from scipy.interpolate import interp1d
 
-#------------------------------
-# Theory Cache 
-#------------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+# TheoryCache
+# ══════════════════════════════════════════════════════════════════════════════
 class TheoryCache:
     def __init__(self):
         self._store = {}

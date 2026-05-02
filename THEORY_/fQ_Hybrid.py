@@ -62,7 +62,7 @@ class fQHybrid(CosmologyModelBase):
     def background_config(self):
         return BackgroundConfig(
             z_max=3.0,
-            nz=500,
+            nz=150,
             integration_method="trapz"
         )
     
@@ -117,7 +117,7 @@ class fQHybrid(CosmologyModelBase):
                 latex=r'\alpha_2',
                 prior=UniformPrior(low=0.0, high=1.0),
                 role="cosmo",
-                status="free",
+                status="free", 
                 proposed_scale=0.05
             ),
             Parameter(

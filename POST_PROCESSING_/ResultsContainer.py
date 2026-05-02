@@ -203,12 +203,21 @@ class MCMCResults:
         )
     
     def diagnostics_dict(self, pipeline=None):
+        parameters = {
+            name: {
+                "mean"    : float(self.mean[i]),
+                "std"     : float(self.std[i]),
+                "best_fit": float(self.best_fit[i]),
+            }
+            for i, name in enumerate(self.param_names)
+        }
         d = {
             "tau": _serialize(self.tau),
             "ess": _serialize(self.ess),
             "acceptance": _serialize(self.acceptance),
             "rhat": self.metadata.get("rhat", None),
-            "information_criteria": self._information_criteria
+            "parameters": parameters,
+            "information_criteria": self._information_criteria,
         }
         if self.metadata.get("mode") == "nested":
             logZ     = self.metadata.get("logZ")

@@ -21,6 +21,7 @@ from POST_PROCESSING_.Archive_.Serializers import YAML_load
 from POST_PROCESSING_.MultiChainResults import MultiChainResults
 
 from THEORY_.LCDM_ import LCDM
+from THEORY_.fQ_LCDM import fQ_LCDM
 from THEORY_.fQ_Hybrid import fQHybrid
 from THEORY_.fQ_EHybrid import fQEHybrid
 from THEORY_.fQ_LSR import fQLSR
@@ -32,6 +33,7 @@ from LIKELIHOODS_.Pantheonplus import Pantheonplus
 from LIKELIHOODS_.PantheonplusSH0ES import PantheonplusSH0ES
 from LIKELIHOODS_.GW import GWStandardSiren
 from LIKELIHOODS_.DESIDR2BAO import DESIDRIIBAO
+from LIKELIHOODS_.SDSSDR16BAO import SDSSDR16BAO
 from LIKELIHOODS_.H0priors import SH0ESprior, TRGBprior, H0LiCOWPrior
 from LIKELIHOODS_.RSD import RedshiftSpaceDistortion
 from LIKELIHOODS_.EgStatistic import EgStatistic
@@ -60,6 +62,7 @@ os.environ["VECLIB_NUM_THREADS"] = "1"
 #---------- REGISTRIES ----------#
 MODEL_REGISTRY = {
     "LCDM": LCDM,
+    "fQ_LCDM": fQ_LCDM,
     "fQ_Hybrid": fQHybrid,
     "fQ_EHybrid": fQEHybrid,
     "fQ_LSR": fQLSR,
@@ -80,7 +83,8 @@ LIKELIHOOD_REGISTRY = {
     "Eg": EgStatistic,
     "CompCMB": CompressedCMB,
     "D5": DESY5,
-    "Dovekie": DESDovekie
+    "Dovekie": DESDovekie,
+    "SD16B": SDSSDR16BAO,
 }
 
 SAMPLER_REGISTRY = {

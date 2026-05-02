@@ -21,9 +21,6 @@ Optionally override:
     muG(z, theta, bg_engine)   — gravitational coupling μ_G(z) for the
                                  growth equation; default is GR (μ_G = 1).
 """
-#------------------------------
-# Preamble 
-#------------------------------
 import numpy as np
 from abc import ABC, abstractmethod
 from CORE_.BackgroundKinematics import BackgroundKinematics
@@ -32,9 +29,9 @@ from dataclasses import replace
 from CORE_.TheoryCache import TheoryCache
 from CORE_.EngineResolver import fill_theory_cache
 
-#------------------------------
-# Cosmology Model Base Class 
-#------------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+# CosmologyModelBase
+# ══════════════════════════════════════════════════════════════════════════════
 class CosmologyModelBase(ABC):
     name = "base"
 

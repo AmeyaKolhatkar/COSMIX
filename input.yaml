@@ -1,22 +1,26 @@
 run:
-  name: "fQ_Hybrid"
-  description: "fQ_Hybrid test runs"
-  run_id: "fQ_Hybrid_DESY5_test_2"   
+  name: "HYBRID 2"
+  description: "Hybrid 2 runs"
+  run_id: "Hybrid_2/DDTBRSD_Runs/Base_DDTBRSD_fQ"       # Base : Compressed CMB + Eg + Pantheon+
 
 model:
   name: fQ_Hybrid
 
-likelihoods: 
-  - name: D5
+likelihoods:  
+  - name: PP
+  - name: CompCMB
+  - name: Eg
+  - name: DDTB
+  - name: RSD
 
 # ── emcee (MCMC) ────────────────────────────────────────────────────────────
-sampler:
-  name: emcee
-  init: 
-    random_seed: 42
-  run: 
-    nsteps: 5000
-    burn_in: 2500
+#sampler:
+#  name: emcee
+#  init: 
+#    random_seed: 42
+#  run: 
+#    nsteps: 5000
+#    burn_in: 0
   
 convergence:
   mode: multi_fixed            # "single" / "multi_fixed" / "multi_auto"   UNDER CONSTRUCTION
@@ -32,13 +36,12 @@ convergence:
 # To use Dynesty, replace the sampler block above with this block.
 # The convergence block is NOT required for nested samplers; remove it or leave it.
 #
-#sampler:
-#  name: dynesty
-#  init:
-#    nlive: 500          # live points (default 500; use ~25*ndim for accuracy)
-#    n_cpu: 4             # CPU cores for parallel likelihood evaluation (default 1 = serial)
-                         # Set to physical core count for ~N× speedup on likelihood calls.
-                         # Windows note: requires all pipeline objects to be picklable.
+sampler:
+  name: dynesty
+  init:
+    nlive: 2000           # 25×ndim is sufficient; 6000 was 800× overkill for 7D
+    sample: rslice       # slice sampler handles sigma80-lambda0 degeneracy; rwalk stalls
+    n_cpu: 6             # CPU cores for parallel likelihood evaluation (default 1 = serial)
 #
 # ── PolyChord (nested sampling) ──────────────────────────────────────────────
 # To use PolyChord, replace the sampler block above with this block.

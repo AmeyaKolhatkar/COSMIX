@@ -1,7 +1,7 @@
-# DESY5
-"""
-DES-SN5YR likelihood  (Vincenzi et al. 2024 / Abbott et al. 2024)
-— LEGACY dataset: 1829 SNe from the original DES-SN5YR paper release —
+"""DESY5 — DES-SN5YR Type Ia supernova likelihood (legacy dataset).
+
+Vincenzi et al. 2024 / Abbott et al. 2024.  1829 SNe from the original
+DES-SN5YR paper release.
 
 Data files (DATA_/DES-SN5YR/4_DISTANCES_COVMAT/)
     DES-SN5YR_HD+MetaData.csv  — 1829 distance moduli, redshifts, metadata
@@ -24,10 +24,6 @@ The nuisance parameter M (absolute magnitude / H0 offset) is analytically
 marginalized over a flat prior using the Conley et al. (2011) formula.
 M and H0 are fully degenerate; do not use this sample alone to measure H0.
 """
-
-#------------------------------
-# Preamble
-#------------------------------
 import gzip
 from pathlib import Path
 from CORE_.LikelihoodBase_ import LikelihoodBase, GaussMargTerm
@@ -87,6 +83,11 @@ class DESY5(LikelihoodBase):
         self.mu_obs = data["MU"].values[mask]            # observed distance modulus
         self.mu_err = data["MUERR_FINAL"].values[mask]  # per-SN statistical uncertainty
 
+        # BEAMS plot mask: exclude likely contaminants (PIa < 0.5) from visualization.
+        # PROBCC_BEAMS is the probability of being a core-collapse SN; PIa = 1 - PROBCC_BEAMS.
+        # This mask does NOT affect the likelihood — all 1829 SNe are used in sampling.
+        self._plot_mask = data["PROBCC_BEAMS"].values[mask] < 0.5
+
         N = len(self.mu_obs)
         self.N = N
 
@@ -103,6 +104,13 @@ class DESY5(LikelihoodBase):
 
         self.cov     = cov
         self.inv_cov = np.linalg.inv(cov)
+
+        self.ones = np.ones(N)
+
+        # Precompute Conley marginalization constants (theta-independent)
+        # q = C^{-1} · 1  →  A = 1^T q (scalar), B = q · res (O(N) dot per call)
+        self._q        = self.inv_cov @ self.ones        # shape (N,)
+        self._A_conley = float(self.ones @ self._q)      # scalar constant
 
         # Normalization
         sign, logdet = np.linalg.slogdet(self.cov)
@@ -140,9 +148,8 @@ class DESY5(LikelihoodBase):
         factor = (1.0 + self.zHEL) / (1.0 + self.zCMB)
         mu_th = 5.0 * np.log10(factor * dL) + 25.0
         res = self.mu_obs - mu_th
-        A = float(self.ones @ self.inv_cov @ self.ones)
-        B = float(self.ones @ self.inv_cov @ res)
-        return GaussMargTerm("M", A=A, B=B, ln_norm=0.0)
+        B = float(self._q @ res)
+        return GaussMargTerm("M", A=self._A_conley, B=B, ln_norm=0.0)
 
     def lnlike(self, theta, theory):
         dL = theory.eval("dL", self.zCMB)
@@ -167,9 +174,7 @@ class DESY5(LikelihoodBase):
     def _map_M(self, mu_th_noM):
         """MAP value of M when analytically marginalized (B/A from Gaussian integral)."""
         r = self.mu_obs - mu_th_noM
-        A = float(self.ones @ self.inv_cov @ self.ones)
-        B = float(self.ones @ self.inv_cov @ r)
-        return B / A
+        return float(self._q @ r) / self._A_conley
 
     def get_theory_components(self, theta, theory, z_override=None):
         dL_data = theory.eval("dL", self.zCMB)
@@ -182,8 +187,9 @@ class DESY5(LikelihoodBase):
             M = self.pm.get_value(theta, "M")
 
         if z_override is None:
+            pm = self._plot_mask
             sigma = np.sqrt(np.diag(self.cov))
-            return {"mu": (self.zCMB, self.mu_obs, mu_th_noM + M, sigma)}
+            return {"mu": (self.zCMB[pm], self.mu_obs[pm], (mu_th_noM + M)[pm], sigma[pm])}
         else:
             dL = theory.eval("dL", z_override)
             mu_th = 5.0 * np.log10(dL) + 25.0
