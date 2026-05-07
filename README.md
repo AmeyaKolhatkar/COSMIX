@@ -183,10 +183,10 @@ See [LICENSE](LICENSE) for details.
 If you use COSMIX in your research, please cite the following:
 
 ```bibtex
-@software{kolhatkar_cosmix_2025,
+@software{kolhatkar_cosmix_2026,
   author       = {Kolhatkar, Ameya},
   title        = {{COSMIX: COSmological Modular Inference eXplorer}},
-  year         = 2025,
+  year         = 2026,
   publisher    = {Zenodo},
   version      = {v1.0.0},
   doi          = {10.5281/zenodo.19791571},
