@@ -185,7 +185,7 @@ If you use COSMIX in your research, please cite the following:
 ```bibtex
 @software{kolhatkar_cosmix_2026,
   author       = {Kolhatkar, Ameya},
-  title        = {{COSMIX: COSmological Modular Inference eXplorer}},
+  title        = {{COSMIX: Cosmological Modular Inference Explorer}},
   year         = 2026,
   publisher    = {Zenodo},
   version      = {v1.0.0},
