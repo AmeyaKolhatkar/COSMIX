@@ -34,6 +34,9 @@ Expected .npz file keys:
     mean_vector : shape (4,)  -- [R, l_a, omega_b, n_s] Planck 2018 bestfit
     inv_cov     : shape (4,4) -- inverse covariance matrix
 
+data vector and covariance matrix used from 
+Zhongxu Zhai and Yun Wang (2018) [arxiv:1811.07425]
+
 Default file: DATA_/CMB_compressed/planck_2018.npz
 
 References

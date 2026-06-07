@@ -22,7 +22,7 @@ from CORE_.BackgroundConfiguration import BackgroundConfig
 from CORE_.ParameterManager_ import ParameterManager
 
 from pathlib import Path as _Path
-Default_data_file = _Path(__file__).resolve().parent.parent / "DATA_" / "RSD" / "RSD-1.xlsx"
+Default_data_file = _Path(__file__).resolve().parent.parent / "DATA_" / "RSD" / "RSD-1_noVIPERS.xlsx"
 
 class RedshiftSpaceDistortion(LikelihoodBase):
     name = "RSD"
@@ -145,3 +145,43 @@ class RedshiftSpaceDistortion(LikelihoodBase):
     
     def plot_constituents(self):
         return self.z, self.fs8, self.fs8_err
+
+    def data_manifest(self):
+        """Return one DataPoint per fσ₈ measurement for overlap detection.
+
+        Reads the survey label from the first available column named
+        'Data set', 'Survey', 'survey', 'dataset', or 'Dataset' in the
+        data file.  Also reads 'Ref.' if present.  Falls back to the
+        string 'Unknown' if no such column exists.
+        """
+        from CORE_.OverlapChecker import DataPoint
+        data = pd.read_excel(self.data_file)
+
+        survey_col = next(
+            (c for c in ("Data set", "Survey", "survey", "dataset", "Dataset")
+             if c in data.columns),
+            None,
+        )
+        ref_col = next(
+            (c for c in ("Ref.", "Reference", "reference") if c in data.columns),
+            None,
+        )
+
+        surveys = data[survey_col].values if survey_col else ["Unknown"] * len(self.z)
+        refs    = data[ref_col].values    if ref_col    else [None]      * len(self.z)
+
+        manifest = []
+        for i, z in enumerate(self.z):
+            ref_str = str(refs[i]) if (refs[i] is not None and str(refs[i]) != "nan") else None
+            manifest.append(
+                DataPoint(
+                    likelihood_name=self.name,
+                    observable="fσ₈",
+                    z=float(z),
+                    survey=str(surveys[i]),
+                    value=float(self.fs8[i]),
+                    error=float(self.fs8_err[i]),
+                    reference=ref_str,
+                )
+            )
+        return manifest

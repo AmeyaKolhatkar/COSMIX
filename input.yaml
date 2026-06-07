@@ -1,16 +1,16 @@
 run:
-  name: "HYBRID 2"
-  description: "Hybrid 2 runs"
-  run_id: "Hybrid_2/DDTBRSD_Runs/Base_DDTBRSD_fQ"       # Base : Compressed CMB + Eg + Pantheon+
+  name: "As Followup"
+  description: "TEST"
+  run_id: "As_Followup/base_RSD_noVIPERS_lcdml0as"       # Shared Run Base : Compressed CMB + DDTB + Pantheon+ + Planck As Prior
 
 model:
-  name: fQ_Hybrid
+  name: fQ_LCDM
 
 likelihoods:  
-  - name: PP
   - name: CompCMB
-  - name: Eg
+  - name: PP
   - name: DDTB
+  - name: PlkAsprior
   - name: RSD
 
 # ── emcee (MCMC) ────────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ convergence:
 sampler:
   name: dynesty
   init:
-    nlive: 2000           # 25×ndim is sufficient; 6000 was 800× overkill for 7D
+    nlive: 500           # 25×ndim is sufficient; 6000 was 800× overkill for 7D
     sample: rslice       # slice sampler handles sigma80-lambda0 degeneracy; rwalk stalls
     n_cpu: 6             # CPU cores for parallel likelihood evaluation (default 1 = serial)
 #
@@ -63,3 +63,17 @@ outputs:
     residual: true
 
   archive: true
+
+# ── Dataset overlap check ─────────────────────────────────────────────────────
+# Detects measurements from the same galaxy survey appearing in more than one
+# likelihood (e.g. VIPERS fσ₈ in RSD and VIPERS E_G in EgStatistic share the
+# same underlying PDR-2 spectroscopic catalog).
+#
+# enabled         : set to true to run the check before launching chains.
+# z_tol           : max |Δz| between two points to be considered co-located.
+# abort_on_overlap: true  = hard-stop if any overlap is found (safe default).
+#                   false = print the report and continue (document the caveat).
+overlap_check:
+  enabled: true
+  z_tol: 0.01
+  abort_on_overlap: false

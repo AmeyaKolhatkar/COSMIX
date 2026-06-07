@@ -111,7 +111,26 @@ class LikelihoodBase(ABC):
             {plot_name: callable(viz) -> figure}
         """
         return {}
-    
+
+    def data_manifest(self):
+        """Return a list of :class:`~CORE_.OverlapChecker.DataPoint` objects
+        describing every observational data point held by this likelihood.
+
+        Override in any likelihood that loads tabular observational data
+        (e.g. RSD, Eg, CC, BAO).  The default empty list is correct for
+        likelihoods that hold no independent survey data: priors,
+        CMB-compressed constraints, H0 anchors, etc.
+
+        The list is consumed by :class:`~CORE_.OverlapChecker.OverlapChecker`
+        to detect shared survey measurements across different likelihoods
+        before chains are run.
+
+        Returns
+        -------
+        list of DataPoint
+        """
+        return []
+
 
 class GaussMargTerm:
     """ Generic container for likelihoods that use marginalization """

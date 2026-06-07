@@ -1,4 +1,5 @@
-"""CosmologyModelBase — abstract base class for all COSMIX cosmological models.
+"""
+CosmologyModelBase — abstract base class for all COSMIX cosmological models.
 
 A concrete model must implement three methods:
 
@@ -135,9 +136,59 @@ class CosmologyModelBase(ABC):
     def declare_parameters(cls):
         pass
 
+    def plot_constituents(self):
+        """
+        Optional method to call the data points for a specific likelihood, for plotting purposes. 
+        Should return : z, qty, qty_err 
+        """
+        pass 
+
     def muG(self, z, theta, bg_engine):
         """
         Gravitational coupling mu_G(z) for the growth equation.
         Default: GR limit (mu_G = 1). Override in modified gravity models.
         """
         return np.ones_like(np.asarray(z, dtype=float))
+    
+def make_free(model_cls, *param_names):
+    """Return a copy of model_cls with the named parameters set to free."""
+    from CORE_.ParameterManager_ import Parameter, UniformPrior
+
+    def declare_parameters(cls):
+        result = []
+        for p in model_cls.declare_parameters():
+            if p.name in param_names:
+                p = Parameter(name=p.name, latex=p.latex, prior=p.prior,
+                              role=p.role, status="free",
+                              value=p.value, proposed_scale=p.proposed_scale)
+            result.append(p)
+        return result
+
+    return type(
+        f"{model_cls.__name__}_free_{'_'.join(param_names)}",
+        (model_cls,),
+        {"declare_parameters": classmethod(declare_parameters),
+         "name": f"{model_cls.name}+{'_'.join(param_names)}"}
+    )
+
+
+def make_fixed(model_cls, *param_names):
+    """Return a copy of model_cls with the named parameters set to fixed (at their declared default values)."""
+    from CORE_.ParameterManager_ import Parameter
+
+    def declare_parameters(cls):
+        result = []
+        for p in model_cls.declare_parameters():
+            if p.name in param_names:
+                p = Parameter(name=p.name, latex=p.latex, prior=p.prior,
+                              role=p.role, status="fixed",
+                              value=p.value, proposed_scale=p.proposed_scale)
+            result.append(p)
+        return result
+
+    return type(
+        f"{model_cls.__name__}_fixed_{'_'.join(param_names)}",
+        (model_cls,),
+        {"declare_parameters": classmethod(declare_parameters),
+         "name": f"{model_cls.name}_fixed_{'_'.join(param_names)}"}
+    )

@@ -73,3 +73,35 @@ class EgStatistic(LikelihoodBase):
     
     def plot_constituents(self):
         return self.z, self.Eg, self.Eg_err
+
+    def data_manifest(self):
+        """Return one DataPoint per E_G measurement for overlap detection.
+
+        Reads the survey label from the first available column named
+        'Survey', 'survey', 'Data set', or 'Dataset' in the data file.
+        Falls back to 'Unknown' if no such column exists.
+        """
+        from CORE_.OverlapChecker import DataPoint
+        data = pd.read_excel(self.data_file)
+
+        survey_col = next(
+            (c for c in ("Survey", "survey", "Data set", "Dataset")
+             if c in data.columns),
+            None,
+        )
+
+        surveys = data[survey_col].values if survey_col else ["Unknown"] * len(self.z)
+
+        manifest = []
+        for i, z in enumerate(self.z):
+            manifest.append(
+                DataPoint(
+                    likelihood_name=self.name,
+                    observable="E_G",
+                    z=float(z),
+                    survey=str(surveys[i]),
+                    value=float(self.Eg[i]),
+                    error=float(self.Eg_err[i]),
+                )
+            )
+        return manifest

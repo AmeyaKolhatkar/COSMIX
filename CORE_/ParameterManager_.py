@@ -162,6 +162,32 @@ class ParameterManager:
     def freeze(self):
         self._frozen = True
 
+    def fix_parameter(self, name: str, value: float):
+        """Convert a free parameter to fixed at *value* (must be called before freeze).
+
+        Removes the parameter from the sampling vector and reindexes the
+        remaining free parameters so that ``theta`` stays compact.
+        """
+        if self._frozen:
+            raise RuntimeError(
+                "[ParameterManager] Cannot fix parameters after freeze()."
+            )
+        p = self.get_param(name)
+        if p.status != "free":
+            raise ValueError(
+                f"[ParameterManager] Parameter '{name}' has status "
+                f"'{p.status}'; only 'free' parameters can be fixed via override."
+            )
+        # Remove from free index map and close the gap.
+        removed_idx = self._free_indices.pop(name)
+        for n in list(self._free_indices):
+            if self._free_indices[n] > removed_idx:
+                self._free_indices[n] -= 1
+        # Register as fixed.
+        self._fixed_values[name] = float(value)
+        p.status = "fixed"
+        p.value  = float(value)
+
     def get_value(self, theta, name):
         if name in self._free_indices:
             return theta[self._free_indices[name]]

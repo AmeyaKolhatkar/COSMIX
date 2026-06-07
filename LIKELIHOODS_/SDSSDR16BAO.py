@@ -1,6 +1,6 @@
-"""SDSS DR16 combined BAO / BAO+ likelihood.
+"""SDSS DR16 combined BAO / BAO+ / RSD likelihood.
 
-Two modes (selected via the ``mode`` kwarg, e.g. in input.yaml ``options``):
+Three modes (selected via the ``mode`` kwarg, e.g. in input.yaml ``options``):
 
   ``"BAO"``   — Geometry only.  Gaussian block: BOSS DR12 LRG (z=0.38, 0.51),
                 eBOSS LRG (z=0.698), eBOSS QSO (z=1.48), and MGS (z=0.15,
@@ -17,6 +17,15 @@ Two modes (selected via the ``mode`` kwarg, e.g. in input.yaml ``options``):
                 The nuisance parameter ``sigma80`` (σ₈ today) is always
                 declared free—it is unconstrained in ``"BAO"`` mode and
                 naturally constrained in ``"BAO+"`` mode by the fσ8 data.
+
+  ``"RSD"``   — Growth only.  Loads the same FSBAO data files as ``"BAO+"``
+                but retains only the fσ8 entries from the Gaussian block
+                (5 redshifts: z = 0.15, 0.38, 0.51, 0.698, 1.48).  The
+                covariance is the marginal fσ8 sub-block of the full joint
+                covariance, preserving the DR12 LRG intra-bin correlation.
+                ELG and Lya are skipped (their joint DM/DH/fσ8 grids cannot
+                be cleanly reduced to a fσ8-only marginal).  r_d is declared
+                but not used; sigma80 is free and constrained by the data.
 
 Galaxy tracers (Gaussian block)
 --------------------------------
@@ -100,13 +109,15 @@ def _key_from_label(lbl: str) -> str:
 
 # ══════════════════════════════════════════════════════════════════════════════
 class SDSSDR16BAO(LikelihoodBase):
-    """SDSS DR16 combined BAO / BAO+ likelihood.
+    """SDSS DR16 combined BAO / BAO+ / RSD likelihood.
 
     Parameters
     ----------
     pm : ParameterManager
-    mode : {"BAO", "BAO+"}, default "BAO"
-        Selects geometry-only (BAO) or geometry + growth (BAO+).
+    mode : {"BAO", "BAO+", "RSD"}, default "BAO"
+        ``"BAO"``  — geometry only.
+        ``"BAO+"`` — geometry + growth (fσ8).
+        ``"RSD"``  — growth only (fσ8 Gaussian block, no ELG / Lya).
     data_dir : path-like, optional
         Path to the directory containing all SDSS DR16 data files.
         Defaults to ``DATA_/SDSSDR16/`` relative to the package root.
@@ -125,25 +136,49 @@ class SDSSDR16BAO(LikelihoodBase):
     _MGS_DV_RD_VAR  = 0.168 ** 2    # σ² = 0.028224
 
     # ──────────────────────────────────────────────────────────────────────────
-    def __init__(self, pm, mode: str = "BAO", data_dir=None):
+    def __init__(self, pm, mode: str = "BAO", data_dir=None,
+                 exclude_tracers=None):
         super().__init__(pm)
 
-        if mode not in ("BAO", "BAO+"):
+        if mode not in ("BAO", "BAO+", "RSD"):
             raise ValueError(
-                f"[SDSSDR16BAO] 'mode' must be 'BAO' or 'BAO+', got {mode!r}."
+                f"[SDSSDR16BAO] 'mode' must be 'BAO', 'BAO+', or 'RSD', got {mode!r}."
             )
         self.mode = mode
         self.data_dir = (
             Path(data_dir) if data_dir is not None else _DEFAULT_DATA_DIR
         )
 
+        # Normalise exclusion list to lowercase strings.
+        # Supported values: "lya", "lya_auto", "lya_cross", "elg".
+        # "lya" is shorthand for both "lya_auto" and "lya_cross".
+        raw_excl = list(exclude_tracers) if exclude_tracers else []
+        _excl = {t.lower() for t in raw_excl}
+        if "lya" in _excl:
+            _excl.update({"lya_auto", "lya_cross"})
+        invalid = _excl - {"lya", "lya_auto", "lya_cross", "elg"}
+        if invalid:
+            raise ValueError(
+                f"[SDSSDR16BAO] Unknown tracer(s) in exclude_tracers: {invalid}. "
+                "Valid names: 'lya', 'lya_auto', 'lya_cross', 'elg'."
+            )
+        # RSD mode keeps only fσ8 entries.  ELG and Lya cannot be cleanly
+        # reduced to a growth-only marginal from their joint tabulated grids,
+        # so auto-exclude them so that all downstream guards work naturally.
+        if mode == "RSD":
+            _excl.update({"elg", "lya_auto", "lya_cross"})
+        self._excl: set = _excl
+
         # Build data structures in three stages:
         self._load_gaussian_block()   # 1. Gaussian block (multi-tracer)
         self._load_elg()              # 2. ELG tabulated likelihood
         self._load_lya()              # 3. Lya auto + cross 2-D grids
 
-        # Gaussian block + 1 ELG effective measurement + 2 Lya (auto + cross)
-        self.data_size = len(self._gauss_val) + 1 + 2
+        # Gaussian block + optional ELG + optional Lya auto + optional Lya cross
+        _extra = (0 if "elg" in self._excl else 1)
+        _extra += (0 if "lya_auto" in self._excl else 1)
+        _extra += (0 if "lya_cross" in self._excl else 1)
+        self.data_size = len(self._gauss_val) + _extra
         self.produce_residuals = True
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -336,6 +371,35 @@ class SDSSDR16BAO(LikelihoodBase):
             for z, l in zip(self._gauss_z, self._gauss_lbl)
         ]
 
+        # ── RSD mode: keep only fσ8 entries from the full BAO+ block ──────────
+        # The marginal likelihood for fσ8 alone uses the fσ8 sub-block of the
+        # full joint covariance (block-diagonal per tracer, so this is exact
+        # for the between-tracer structure; within-tracer correlations such as
+        # the DR12 LRG z=0.38–z=0.51 pair are correctly preserved).
+        if self.mode == "RSD":
+            mask = (self._gauss_lbl == "f_sigma8")
+            if not mask.any():
+                raise RuntimeError(
+                    "[SDSSDR16BAO] RSD mode found no f_sigma8 entries in the "
+                    "Gaussian block.  Check that BAO+ data files are present."
+                )
+            self._gauss_z   = self._gauss_z[mask]
+            self._gauss_val = self._gauss_val[mask]
+            self._gauss_lbl = self._gauss_lbl[mask]
+            self._param_labels = [
+                lbl for lbl, keep in zip(self._param_labels, mask) if keep
+            ]
+            # Marginal covariance = fσ8 sub-block of the joint covariance.
+            self._gauss_cov     = C[np.ix_(mask, mask)]
+            self._gauss_inv_cov = np.linalg.inv(self._gauss_cov)
+            N_rsd = int(mask.sum())
+            sign_r, logdet_r = np.linalg.slogdet(self._gauss_cov)
+            if sign_r <= 0:
+                raise RuntimeError(
+                    "[SDSSDR16BAO] RSD marginal covariance is not positive-definite."
+                )
+            self._gauss_ln_norm = -0.5 * (logdet_r + N_rsd * np.log(2.0 * np.pi))
+
     # ══════════════════════════════════════════════════════════════════════════
     # Stage 2 — ELG tabulated likelihood
     # ══════════════════════════════════════════════════════════════════════════
@@ -354,7 +418,13 @@ class SDSSDR16BAO(LikelihoodBase):
 
         The relative likelihood is normalised so that its maximum equals 1
         before taking the logarithm, giving log-likelihood offset = 0 at peak.
+
+        Skipped entirely when ``'elg'`` is in ``exclude_tracers``.
         """
+        if "elg" in self._excl:
+            self._elg_interp    = None
+            self._elg_3d_interp = None
+            return
         if self.mode == "BAO":
             tab   = np.loadtxt(self.data_dir / "sdss_DR16_ELG_BAO_DVtable.txt")
             dv_rd = tab[:, 0]
@@ -424,11 +494,18 @@ class SDSSDR16BAO(LikelihoodBase):
         The 2-D regular grid has DM/rd as the outer axis (slow) and DH/rd
         as the inner axis (fast).  After lexsort + reshape the grid is
         stored as a ``RegularGridInterpolator`` in log-likelihood space.
+
+        Individual components can be skipped when ``'lya_auto'`` or
+        ``'lya_cross'`` (or the shorthand ``'lya'`` for both) appear in
+        ``exclude_tracers``; the corresponding attribute is set to ``None``.
         """
-        for attr, fname in (
-            ("_lya_auto_interp",  "sdss_DR16_LYAUTO_BAO_DMDHgrid.txt"),
-            ("_lya_cross_interp", "sdss_DR16_LYxQSO_BAO_DMDHgrid.txt"),
+        for attr, fname, key in (
+            ("_lya_auto_interp",  "sdss_DR16_LYAUTO_BAO_DMDHgrid.txt",  "lya_auto"),
+            ("_lya_cross_interp", "sdss_DR16_LYxQSO_BAO_DMDHgrid.txt", "lya_cross"),
         ):
+            if key in self._excl:
+                setattr(self, attr, None)
+                continue
             data  = np.loadtxt(self.data_dir / fname, comments="#")
 
             # Sort: DM outer (axis 0), DH inner (axis 1)
@@ -454,6 +531,7 @@ class SDSSDR16BAO(LikelihoodBase):
                 bounds_error=False,
                 fill_value=-np.inf,
             ))
+            # (the `continue` at the top of the loop handles the excluded case)
 
     # ══════════════════════════════════════════════════════════════════════════
     # Analytic r_d marginalization  (BAO mode only)
@@ -530,17 +608,19 @@ class SDSSDR16BAO(LikelihoodBase):
             req.setdefault(key, set()).add(float(z))
 
         # ── ELG ──────────────────────────────────────────────────────────────
-        z_elg = self._ELG_Z_EFF
-        if self.mode == "BAO":
-            req.setdefault("DV", set()).add(z_elg)
-        else:
-            for key in ("DM", "DH", "fsigma8"):
-                req.setdefault(key, set()).add(z_elg)
+        if "elg" not in self._excl:
+            z_elg = self._ELG_Z_EFF
+            if self.mode == "BAO":
+                req.setdefault("DV", set()).add(z_elg)
+            else:
+                for key in ("DM", "DH", "fsigma8"):
+                    req.setdefault(key, set()).add(z_elg)
 
         # ── Lya auto + cross (both modes use DM, DH at z=2.334) ──────────────
-        z_lya = self._LYA_Z_EFF
-        for key in ("DM", "DH"):
-            req.setdefault(key, set()).add(z_lya)
+        if "lya_auto" not in self._excl or "lya_cross" not in self._excl:
+            z_lya = self._LYA_Z_EFF
+            for key in ("DM", "DH"):
+                req.setdefault(key, set()).add(z_lya)
 
         return {k: np.array(sorted(v)) for k, v in req.items()}
 
@@ -606,22 +686,28 @@ class SDSSDR16BAO(LikelihoodBase):
             ln     = -0.5 * chi2 + self._gauss_ln_norm
 
         # ── 2. ELG ───────────────────────────────────────────────────────────
-        if self.mode == "BAO":
-            dv_th = theory.eval("DV", np.array([self._ELG_Z_EFF]))[0]
-            ln   += float(self._elg_interp(dv_th / rd_eff))
-        else:
-            dm_e   = theory.eval("DM",      np.array([self._ELG_Z_EFF]))[0]
-            dh_e   = theory.eval("DH",      np.array([self._ELG_Z_EFF]))[0]
-            fs8_e  = theory.eval("fsigma8", np.array([self._ELG_Z_EFF]))[0]
-            pt_3d  = np.array([[dm_e / rd_eff, dh_e / rd_eff, fs8_e]])
-            ln    += float(self._elg_3d_interp(pt_3d)[0])
+        if "elg" not in self._excl:
+            if self.mode == "BAO":
+                dv_th = theory.eval("DV", np.array([self._ELG_Z_EFF]))[0]
+                ln   += float(self._elg_interp(dv_th / rd_eff))
+            else:
+                dm_e   = theory.eval("DM",      np.array([self._ELG_Z_EFF]))[0]
+                dh_e   = theory.eval("DH",      np.array([self._ELG_Z_EFF]))[0]
+                fs8_e  = theory.eval("fsigma8", np.array([self._ELG_Z_EFF]))[0]
+                pt_3d  = np.array([[dm_e / rd_eff, dh_e / rd_eff, fs8_e]])
+                ln    += float(self._elg_3d_interp(pt_3d)[0])
 
         # ── 3 & 4. Lya auto + cross ───────────────────────────────────────────
-        dm_l  = theory.eval("DM", np.array([self._LYA_Z_EFF]))[0]
-        dh_l  = theory.eval("DH", np.array([self._LYA_Z_EFF]))[0]
-        pt_2d = np.array([[dm_l / rd_eff, dh_l / rd_eff]])
-        ln   += float(self._lya_auto_interp(pt_2d)[0])
-        ln   += float(self._lya_cross_interp(pt_2d)[0])
+        if "lya_auto" in self._excl and "lya_cross" in self._excl:
+            pass   # both excluded — skip DM/DH evaluation at z_lya entirely
+        else:
+            dm_l  = theory.eval("DM", np.array([self._LYA_Z_EFF]))[0]
+            dh_l  = theory.eval("DH", np.array([self._LYA_Z_EFF]))[0]
+            pt_2d = np.array([[dm_l / rd_eff, dh_l / rd_eff]])
+            if "lya_auto" not in self._excl:
+                ln += float(self._lya_auto_interp(pt_2d)[0])
+            if "lya_cross" not in self._excl:
+                ln += float(self._lya_cross_interp(pt_2d)[0])
 
         return ln
 

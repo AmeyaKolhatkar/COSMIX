@@ -16,6 +16,7 @@ Omegar0  — radiation density (imported from Constants.py)
 """
 import numpy as np
 from CORE_.CosmologyModelBase import CosmologyModelBase
+from THEORY_.CurvedfQBase import CurvedfQBase
 from CORE_.ParameterManager_ import Parameter, GaussianPrior, UniformPrior
 from CORE_.BackgroundConfiguration import BackgroundConfig
 from THEORY_.Solvers_.BackgroundProblem import AnalyticalProblem
@@ -95,3 +96,45 @@ class fQ_LCDM(CosmologyModelBase):
                 proposed_scale=0.05
             )
         ]
+
+# ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+class fQLCDMCurved(CurvedfQBase):
+    """
+    f(Q) = alpha1 Q + alpha2 Q0  
+    """
+    name = "fQ_LCDM_Curved"
+
+    def __init__(self, pm):
+        super().__init__(pm)
+        self.alpha1 = None
+        self.alpha2 = None
+
+    def _set_params_from_theta(self, theta):
+        H0 = self.pm.get_value(theta, "H0")
+        Omegam0 = self.pm.get_value(theta, "Omegam0")
+        Omegak = self.pm.get_value(theta, "Omegak")
+        gamma0 = self.pm.get_value(theta, "gamma0")
+
+        self.alpha1 = self.pm.get_value(theta, "alpha1")
+        self.alpha2 = self.alpha1 - Omegam0 - Omegar0 - Omegak
+
+        # ── Q₀ from kinematic IC (eq. 77 at z=0, γ̇₀=0) ─────────────────────
+        try:
+            y0 = self._initial_conditions(H0, Omegam0, Omegak, gamma0)
+            self._Q0 = y0[0]
+        except (ValueError, RuntimeError):
+            self._Q0 = -6.0 * H0**2   # flat-space fallback
+
+    # ── Abstract interface ───────────────────────────────────────────────────
+    def f(self, Q):
+        return self._alpha1 * Q + self._alpha2 * self._Q0
+
+    def f_prime(self, Q):
+        return self._alpha1 
+
+    def f_double_prime(self, Q):
+        return 0.0
+
+    def f_triple_prime(self, Q):
+        return 0.0

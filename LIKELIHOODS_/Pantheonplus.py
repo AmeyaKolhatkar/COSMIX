@@ -151,3 +151,6 @@ class Pantheonplus(LikelihoodBase):
         return {
             "mu": True
         }
+    
+    def plot_constituents(self):
+        return self.zCMB, self.m_obs, np.sqrt(np.diag(self.cov))

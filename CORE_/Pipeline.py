@@ -29,15 +29,20 @@ class Pipeline:
     Orchestration layer for COSMIX.
     Owns parameters, model, likelihoods, and theory requirements.
     """
-    def __init__(self, model_class, likelihood_classes, likelihood_kwargs=None):
+    def __init__(self, model_class, likelihood_classes, likelihood_kwargs=None,
+                 param_overrides=None):
         """
         model_class: subclass of CosmologyModelBase
         likelihood_classes: list of LikelihoodBase subclasses
         likelihood_kwargs: dict {LikelihoodClass: kwargs dict}
+        param_overrides: dict {param_name: {"fixed": value}} — run-level
+            overrides applied after all parameters are registered but before
+            freeze().  Converts free parameters to fixed at the given value.
         """
         self.model_class = model_class
         self.likelihood_classes = likelihood_classes
         self.likelihood_kwargs = likelihood_kwargs or {}
+        self.param_overrides = param_overrides or {}
 
         self.pm = ParameterManager()
         self.model = None
@@ -54,10 +59,20 @@ class Pipeline:
         for p in self.model_class.declare_parameters():             
             self.pm.add_parameter(p)
 
-        # 2. Register nuisance parameters 
+        # 2. Register nuisance parameters (skip duplicates so that multiple
+        #    likelihoods declaring the same parameter, e.g. sigma80 in both
+        #    PlanckAsPrior and SDSSDR16BAO, do not clash).
+        _registered = {p.name for p in self.model_class.declare_parameters()}
         for lkcls in self.likelihood_classes:
             for p in lkcls.declare_parameters():
-                self.pm.add_parameter(p)
+                if p.name not in _registered:
+                    self.pm.add_parameter(p)
+                    _registered.add(p.name)
+
+        # 2b. Apply run-level parameter overrides (fix free params to a value).
+        for name, spec in self.param_overrides.items():
+            if "fixed" in spec:
+                self.pm.fix_parameter(name, spec["fixed"])
 
         # 3. Freeze parameters
         self.pm.freeze()

@@ -25,7 +25,6 @@ class MultiRunVisualization:
                           names=r.param_names,
                           labels=r.latex_names,
                           weights=getattr(r, "weights", None))
-            s.updateSettings({'fine_bins': 150, 'fine_bins_2D': 50})
             samples_list.append(s)
         _log.setLevel(_prev_level)
         return samples_list
@@ -34,7 +33,6 @@ class MultiRunVisualization:
                        plot_contours=2, alpha_filled_add=0.5, palefactor=0.25, legend_fontsize=15, axes_fontsize=15,
                        lw=1.8, lw_contour=2.5, label_fontsize=15, figure_legend_frame=False,
                        width_inch=8, scaling=False, rc_sizes=True):
-        #plt.figure()
         if colors is not None and len(colors) != len(self.samples_list):
             raise ValueError("Number of color arguments must match number of sample sets.")
         if filled is not None and len(filled) != len(self.samples_list):

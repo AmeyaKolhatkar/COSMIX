@@ -22,11 +22,12 @@ from POST_PROCESSING_.MultiChainResults import MultiChainResults
 
 from THEORY_.LCDM_ import LCDM
 from THEORY_.fQ_LCDM import fQ_LCDM
-from THEORY_.fQ_Hybrid import fQHybrid
+from THEORY_.fQ_Hybrid import fQHybrid, fQHybrid_Curved
 from THEORY_.fQ_EHybrid import fQEHybrid
 from THEORY_.fQ_LSR import fQLSR
 from THEORY_.fQ_LSR_IDE import fQLSRIDE
 from THEORY_.fQ_Hybrid_IDE import fQHybridIDE
+from THEORY_.fQ_Squared_Curved import fQSquaredCurved 
 
 from LIKELIHOODS_.CosmicChronometers import CosmicChronometers
 from LIKELIHOODS_.Pantheonplus import Pantheonplus
@@ -40,6 +41,7 @@ from LIKELIHOODS_.EgStatistic import EgStatistic
 from LIKELIHOODS_.CompressedCMB import CompressedCMB
 from LIKELIHOODS_.DESY5 import DESY5
 from LIKELIHOODS_.DESDovekie import DESDovekie
+from LIKELIHOODS_.PlanckAsPrior import PlanckAsPrior
 
 from SAMPLERS_.EmceeSampler import emceeSampler
 from SAMPLERS_.DynestySampler import DynestySampler
@@ -63,11 +65,13 @@ os.environ["VECLIB_NUM_THREADS"] = "1"
 MODEL_REGISTRY = {
     "LCDM": LCDM,
     "fQ_LCDM": fQ_LCDM,
-    "fQ_Hybrid": fQHybrid,
+    "fQ_Hybrid": fQHybrid, 
+    "fQ_Hybrid_Curved": fQHybrid_Curved,
     "fQ_EHybrid": fQEHybrid,
     "fQ_LSR": fQLSR,
     "fQ_LSR_IDE": fQLSRIDE,
-    "fQ_Hybrid_IDE": fQHybridIDE
+    "fQ_Hybrid_IDE": fQHybridIDE,
+    "fQ_Squared_Curved": fQSquaredCurved
 }
 
 LIKELIHOOD_REGISTRY = {
@@ -85,6 +89,7 @@ LIKELIHOOD_REGISTRY = {
     "D5": DESY5,
     "Dovekie": DESDovekie,
     "SD16B": SDSSDR16BAO,
+    "PlkAsprior": PlanckAsPrior
 }
 
 SAMPLER_REGISTRY = {
@@ -151,11 +156,41 @@ def main(yaml_path):
 
     
     # pipeline
+    # Optional run-level parameter overrides: fix any free parameter to a value.
+    # YAML example:
+    #   parameters:
+    #     lambda0:
+    #       fixed: 1.5
+    param_overrides = {}
+    for pname, spec in config.get("parameters", {}).items():
+        if "fixed" in spec:
+            param_overrides[pname] = {"fixed": float(spec["fixed"])}
+
     pipeline = Pipeline(
         model_class=model_cls,
         likelihood_classes=likelihood_classes,
-        likelihood_kwargs=likelihood_kwargs
+        likelihood_kwargs=likelihood_kwargs,
+        param_overrides=param_overrides,
     )
+
+    # ── Dataset overlap check ─────────────────────────────────────────────────
+    # Controlled by `overlap_check:` in input.yaml.  Detects measurements from
+    # the same galaxy survey appearing in multiple likelihoods (e.g. VIPERS fσ₈
+    # in RSD *and* VIPERS E_G in EgStatistic).  Set abort_on_overlap: true to
+    # stop the run hard when overlaps are found; false (default) only warns.
+    overlap_cfg = config.get("overlap_check", {})
+    if overlap_cfg.get("enabled", False):
+        from CORE_.OverlapChecker import OverlapChecker
+        z_tol        = float(overlap_cfg.get("z_tol", 0.01))
+        abort_on_ovl = bool(overlap_cfg.get("abort_on_overlap", False))
+        report = OverlapChecker(z_tol=z_tol).check(pipeline.likelihoods)
+        report.pretty_print()
+        if report.has_overlaps and abort_on_ovl:
+            raise RuntimeError(
+                "Overlapping datasets detected (see report above).  "
+                "Remove duplicate survey measurements from one likelihood, "
+                "or set abort_on_overlap: false in input.yaml to proceed."
+            )
 
     # sampler
     sampler_config = config["sampler"]

@@ -311,7 +311,7 @@ class DatasetConsistency:
 
         def _kl_and_dim(run: dict) -> tuple[float, float]:
             """Return (D_KL, d_tilde) for one run."""
-            logl  = run["log_prob"]
+            logl  = run["log_prob"].copy()
             logZ  = run["logZ_raw"]
             w     = run["weights"]
 
@@ -320,7 +320,22 @@ class DatasetConsistency:
                 w = np.ones(len(logl), dtype=float)
                 w /= w.sum()
             else:
-                w = w / w.sum()
+                w = np.asarray(w, dtype=float) / np.sum(w)
+
+            # Dynesty stores ALL dead points in res.logl, including early
+            # initialisation samples with log L ≈ -float_max (sentinel values
+            # for unphysical parameter draws).  These points have w = 0 exactly
+            # in float64, but (log L)² overflows to inf, and 0 × inf = NaN in
+            # IEEE 754.  Mask them out before squaring.
+            valid = (w > 0.0) & np.isfinite(logl)
+            if not valid.any():
+                raise ValueError(
+                    f"No valid posterior samples found in {run['run_dir']}. "
+                    "Check that the run completed and weights.npy is present."
+                )
+            logl = logl[valid]
+            w    = w[valid]
+            w    = w / w.sum()          # renormalise after masking
 
             log_IS = logl - logZ                        # Shannon information
             D_KL   = float(np.sum(w * log_IS))
