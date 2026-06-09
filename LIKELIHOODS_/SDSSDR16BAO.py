@@ -642,6 +642,9 @@ class SDSSDR16BAO(LikelihoodBase):
                 key = _key_from_label(lbl)     # "DM", "DH", or "DV"
                 th.append(theory.eval(key, np.array([z]))[0] / rd)
         return np.array(th)
+    
+    def norm_term(self):
+        return self._gauss_ln_norm
 
     # ══════════════════════════════════════════════════════════════════════════
     # Log-likelihood
