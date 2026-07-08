@@ -10,7 +10,12 @@ example and README.md for the full list of supported keys.
 """
 import numpy as np
 from datetime import datetime, timezone
+import importlib
+import pkgutil
+import sys, os
+
 from CORE_.Pipeline import Pipeline
+from CORE_.Registry import cosmix_registry
 
 from POST_PROCESSING_.ResultsContainer import MCMCResults
 from POST_PROCESSING_.Diagnostics import MCMCDiagnostics
@@ -20,85 +25,29 @@ from POST_PROCESSING_.Archive_.RunArchive import RunArchive
 from POST_PROCESSING_.Archive_.Serializers import YAML_load
 from POST_PROCESSING_.MultiChainResults import MultiChainResults
 
-from THEORY_.LCDM_ import LCDM
-from THEORY_.fQ_LCDM import fQ_LCDM
-from THEORY_.fQ_Hybrid import fQHybrid, fQHybrid_Curved
-from THEORY_.fQ_EHybrid import fQEHybrid
-from THEORY_.fQ_LSR import fQLSR
-from THEORY_.fQ_LSR_IDE import fQLSRIDE
-from THEORY_.fQ_Hybrid_IDE import fQHybridIDE
-from THEORY_.fQ_Squared_Curved import fQSquaredCurved 
-
-from LIKELIHOODS_.CosmicChronometers import CosmicChronometers
-from LIKELIHOODS_.Pantheonplus import Pantheonplus
-from LIKELIHOODS_.PantheonplusSH0ES import PantheonplusSH0ES
-from LIKELIHOODS_.GW import GWStandardSiren
-from LIKELIHOODS_.DESIDR2BAO import DESIDRIIBAO
-from LIKELIHOODS_.SDSSDR16BAO import SDSSDR16BAO
-from LIKELIHOODS_.H0priors import SH0ESprior, TRGBprior, H0LiCOWPrior
-from LIKELIHOODS_.RSD import RedshiftSpaceDistortion
-from LIKELIHOODS_.EgStatistic import EgStatistic
-from LIKELIHOODS_.CompressedCMB import CompressedCMB
-from LIKELIHOODS_.DESY5 import DESY5
-from LIKELIHOODS_.DESDovekie import DESDovekie
-from LIKELIHOODS_.PlanckAsPrior import PlanckAsPrior
-
-from SAMPLERS_.EmceeSampler import emceeSampler
-from SAMPLERS_.DynestySampler import DynestySampler
-from SAMPLERS_.PolyChordSampler import PolyChordSampler
-from SAMPLERS_.MetropolisHastings import MHSampler
+import THEORY_, LIKELIHOODS_, SAMPLERS_
 
 from DRIVERS_.MultiChainDriver import MultiChainDriver
 from DRIVERS_.SingleChainConvergence import SingleChainStrategy, NestedStrategy
 from DRIVERS_.MultiFixedConvergence import MultiFixedStrategy
 from DRIVERS_.MultiAutoConvergence import MultiAutoStrategy
 
-import sys, os
 
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["VECLIB_NUM_THREADS"] = "1"
 
+#---------- AUTOMATIC MODEL / LIKELIHOOD / SAMPLER SCAN ----------#
+def scan_modules():
+    for package in [THEORY_, LIKELIHOODS_, SAMPLERS_]:
+        for _, module_name, _ in pkgutil.iter_modules(package.__path__):
+            try:
+                importlib.import_module(f"{package.__name__}.{module_name}")
+            except Exception as e:
+                print(f"[run_cosmix] Skipping broken module {module_name} : {e}.")
 
 #---------- REGISTRIES ----------#
-MODEL_REGISTRY = {
-    "LCDM": LCDM,
-    "fQ_LCDM": fQ_LCDM,
-    "fQ_Hybrid": fQHybrid, 
-    "fQ_Hybrid_Curved": fQHybrid_Curved,
-    "fQ_EHybrid": fQEHybrid,
-    "fQ_LSR": fQLSR,
-    "fQ_LSR_IDE": fQLSRIDE,
-    "fQ_Hybrid_IDE": fQHybridIDE,
-    "fQ_Squared_Curved": fQSquaredCurved
-}
-
-LIKELIHOOD_REGISTRY = {
-    "CC": CosmicChronometers,
-    "PP": Pantheonplus,
-    "PPS": PantheonplusSH0ES,
-    "GW": GWStandardSiren,
-    "DDTB": DESIDRIIBAO,
-    "SH0ES": SH0ESprior,
-    "TRGB": TRGBprior,
-    "H0LiCOW": H0LiCOWPrior,
-    "RSD": RedshiftSpaceDistortion,
-    "Eg": EgStatistic,
-    "CompCMB": CompressedCMB,
-    "D5": DESY5,
-    "Dovekie": DESDovekie,
-    "SD16B": SDSSDR16BAO,
-    "PlkAsprior": PlanckAsPrior
-}
-
-SAMPLER_REGISTRY = {
-    "emcee": emceeSampler,
-    "dynesty": DynestySampler,
-    "polychord": PolyChordSampler,
-    "mh": MHSampler,
-}
-
 PLOT_REGISTRY = {
         "trace": lambda viz: viz.trace(),
         "corner": lambda viz: viz.corner(),
@@ -130,6 +79,9 @@ def generate_run_id():
     return datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
 def main(yaml_path):
+
+    scan_modules()
+
     config = YAML_load(yaml_path)
 
     # run id
@@ -143,14 +95,20 @@ def main(yaml_path):
         archive.dry_run_id_check(run_id)
 
     # model
-    model_cls = MODEL_REGISTRY[config["model"]["name"]]
+    model_name = config["model"]["name"]
+    if model_name not in cosmix_registry.models:
+        raise KeyError(f"[run_cosmix] Model {model_name} is not registered.")
+    model_cls = cosmix_registry.models[model_name]
 
     # likelihoods
     likelihood_classes = []
     likelihood_kwargs = {}
 
     for L in config["likelihoods"]:
-        cls = LIKELIHOOD_REGISTRY[L["name"]]
+        likelihood_name = L["name"]
+        if likelihood_name not in cosmix_registry.likelihoods:
+            raise KeyError(f"[run_cosmix] Likelihood {likelihood_name} is not registered.")
+        cls = cosmix_registry.likelihoods[likelihood_name]
         likelihood_classes.append(cls)
         likelihood_kwargs[cls] = L.get("options", {})
 
@@ -195,14 +153,16 @@ def main(yaml_path):
     # sampler
     sampler_config = config["sampler"]
     sampler_name = sampler_config["name"]
-    sampler_cls = SAMPLER_REGISTRY[sampler_config["name"]]
+    if sampler_name not in cosmix_registry.samplers:
+        raise KeyError(f"[run_cosmix] Sampler {sampler_name} is not registered.")
+    sampler_cls = cosmix_registry.samplers[sampler_name]
 
     init_config = sampler_config.get("init", {})
     run_config = sampler_config.get("run", {})
 
     # Nested samplers (dynesty, polychord) take (pm, pipeline) and are
     # self-terminating; they don't use the convergence block.
-    NESTED_SAMPLERS = {DynestySampler, PolyChordSampler}
+    NESTED_SAMPLERS = {cosmix_registry.samplers.get("dynesty", cosmix_registry.samplers.get("polychord"))}
     is_nested = sampler_cls in NESTED_SAMPLERS
 
     if is_nested:

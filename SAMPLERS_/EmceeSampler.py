@@ -13,7 +13,9 @@ result  = sampler.run(nsteps=5000, burn_in=1000)
 import numpy as np
 import emcee
 from SAMPLERS_.SamplerBase import SamplerBase
+from CORE_.Registry import cosmix_registry
 
+@cosmix_registry.register_sampler("emcee")
 class emceeSampler(SamplerBase):
     """
     emcee wrapper.

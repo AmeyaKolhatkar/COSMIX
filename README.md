@@ -34,7 +34,7 @@ Alternatively, a stable archived version is available via Zenodo:
 pip install -r requirements.txt
 ```
 
-For the PolyChord nested sampler (optional, requires a Fortran compiler):
+Warning! The PolyChord nested sampler has not been tested extensively. If you still wish to use it, do
 
 ```bash
 pip install -e DATA_/PolyChordLite
@@ -119,9 +119,11 @@ COSMIX/
 | `LCDM` | Standard ΛCDM |
 | `fQ_Hybrid` | f(Q) Hybrid model (analytical solution) |
 | `fQ_EHybrid` | Extended f(Q) Hybrid model (ODE solver) |
+| `fQ_Hybrid_Curved`| f(Q) Hybrid model with spatial curvature|
 | `fQ_LSR` | f(Q) Log-Square-Root model |
 | `fQ_LSR_IDE` | f(Q) LSR with Interacting Dark Energy |
 | `fQ_Hybrid_IDE` | f(Q) Hybrid with Interacting Dark Energy |
+| `fQ_Squared_Curved` | Squared f(Q) model with spatial curvature |
 
 ---
 
@@ -129,18 +131,19 @@ COSMIX/
 
 | Key | Dataset | Reference |
 |---|---|---|
-| `CC` | Cosmic Chronometers (correlated + uncorrelated) | Moresco et al. |
-| `PP` | Pantheon+ (SN Ia, no SH0ES prior) | Brout et al. 2022 |
-| `PPS` | Pantheon+SH0ES (SN Ia + H₀ prior) | Brout et al. 2022 |
-| `DDTB` | DESI DR2 BAO (full GC combination) | DESI Collaboration 2025 |
-| `RSD` | Redshift Space Distortions (fσ₈) | Various |
-| `GW` | GW Standard Sirens (GW170817) | LIGO/Virgo |
-| `D5` | DES-SN5YR (SN Ia with probabilistic classification) | DES Collaboration |
-| `SH0ES` | SH0ES H₀ Gaussian prior | Riess et al. |
-| `TRGB` | TRGB H₀ prior | Freedman et al. |
-| `H0LiCOW` | H0LiCOW H₀ prior | Wong et al. |
-| `CompCMB`| Compressed CMB | Z. Zhai and Y. Wang |
-| `Eg`| Eg Statistic | G. Alestas et al.|
+| `cosmicchronometers` | Cosmic Chronometers (correlated + uncorrelated) | Moresco et al. |
+| `pantheonplus` | Pantheon+ (SN Ia, no SH0ES prior) | Brout et al. 2022 |
+| `pantheonplusshoes` | Pantheon+SH0ES (SN Ia + H₀ prior) | Brout et al. 2022 |
+| `desidr2bao` | DESI DR2 BAO (full GC combination) | DESI Collaboration 2025 |
+| `rsd` | Redshift Space Distortions (fσ₈) | Various |
+| `gw` | GW Standard Sirens (GW170817) | LIGO/Virgo |
+| `desy5` | DES-SN5YR (SN Ia with probabilistic classification) | DES Collaboration |
+| `desdovekie` | DES-Dovekie Likelihood | DES Collaboration |
+| `shoes` | SH0ES H₀ Gaussian prior | Riess et al. |
+| `trgb` | TRGB H₀ prior | Freedman et al. |
+| `holicow` | H0LiCOW H₀ prior | Wong et al. |
+| `compressedcmb`| Compressed CMB | Z. Zhai and Y. Wang |
+| `egstatistic`| Eg Statistic | G. Alestas et al.|
 
 ---
 
@@ -148,10 +151,12 @@ COSMIX/
 
 1. Create `THEORY_/MyModel.py` inheriting from `CORE_.CosmologyModelBase`.
 2. Implement `declare_parameters()`, `check_physicality()`, and `get_requirements()`.
-3. Register it in `run_cosmix.py` (under `MODEL_REGISTRY`):
+3. Register it in through the `Registry.py` utility 
    ```python
-   from THEORY_.MyModel import MyModel
-   MODEL_REGISTRY["MyModel"] = MyModel
+   from CORE_.Registry import cosmix_registry
+   
+   @cosmix_registry.register_model("MyModel")
+   class MyModel(...)
    ```
 4. Reference it in `input.yaml` as `model: { name: MyModel }`.
 
@@ -159,9 +164,24 @@ COSMIX/
 
 1. Create `LIKELIHOODS_/MyLikelihood.py` inheriting from `CORE_.LikelihoodBase_`.
 2. Implement `declare_parameters()`, `get_requirements()`, and `lnlike()`.
-3. Register it in `run_cosmix.py` under `LIKELIHOOD_REGISTRY`.
+3. Register it in through the `Registry.py` utility 
+   ```python
+   from CORE_.Registry import cosmix_registry
+   
+   @cosmix_registry.register_likelihood("MyLikelihood")
+   class MyLikelihood(...)
+   ```
 
 ---
+## Under Development
+
+- The PolyChord sampler has not been fully tested yet. User discretion is adviced.
+- The `multi_auto` mode for `emcee` sampler is not fully developed. The goal is to implement the auto stop feature found in most Bayesian inference codes like `Cobaya`.
+- The `MetropolisHastings.py` sampler is premature. Avoid using it for serious projects.
+---
+
+## Coming Soon
+- `CAMB` Interface and CMB implementation capabilities.
 
 ## Requirements
 
@@ -193,3 +213,11 @@ If you use COSMIX in your research, please cite the following:
   url          = {https://doi.org/10.5281/zenodo.19791571}
 }
 ```
+
+---
+
+## Contact
+If there are any issues or suggestions for the code please feel free to contact me at \
+kolhatkarameya1996@gmail.com
+
+---

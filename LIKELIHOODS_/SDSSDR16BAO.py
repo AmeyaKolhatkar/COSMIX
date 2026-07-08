@@ -86,7 +86,7 @@ import numpy as np
 from pathlib import Path
 import pandas as pd
 from scipy.interpolate import interp1d, RegularGridInterpolator
-
+from CORE_.Registry import cosmix_registry
 from CORE_.LikelihoodBase_ import LikelihoodBase, GaussMargTerm
 from CORE_.ParameterManager_ import Parameter, UniformPrior
 
@@ -108,6 +108,7 @@ def _key_from_label(lbl: str) -> str:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+@cosmix_registry.register_likelihood("sdssdr16")
 class SDSSDR16BAO(LikelihoodBase):
     """SDSS DR16 combined BAO / BAO+ / RSD likelihood.
 

@@ -49,6 +49,7 @@ References
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from CORE_.Registry import cosmix_registry
 from CORE_.LikelihoodBase_ import LikelihoodBase
 from CORE_.ParameterManager_ import Parameter, GaussianPrior
 from Constants import c, Omegar0
@@ -63,7 +64,7 @@ Default_cov_file = _DATA_CompCMB / "compressed_cmb_cov.txt"
 # This also triggers z_max_extended in build_engines (see CosmologyModelBase).
 _CMB_Z_GRID = np.concatenate([[0.0], np.geomspace(1e-4, 1100.0, 499)])
 
-
+@cosmix_registry.register_likelihood("compressedcmb")
 class CompressedCMB(LikelihoodBase):
     """Planck 2018 compressed CMB likelihood over [R, l_a, omega_b, n_s]."""
 

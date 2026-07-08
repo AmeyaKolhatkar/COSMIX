@@ -16,6 +16,7 @@ gamma_D  — dark-energy injection rate
 """
 import numpy as np
 from numba import njit
+from CORE_.Registry import cosmix_registry
 from CORE_.CosmologyModelBase import CosmologyModelBase
 from CORE_.ParameterManager_ import Parameter, GaussianPrior, UniformPrior
 from CORE_.BackgroundConfiguration import BackgroundConfig
@@ -51,7 +52,7 @@ def ide_Omegam_rhs(z, y, params):
     
     return np.array([dOm_dz], dtype=np.float64)
 
-
+@cosmix_registry.register_model("fQ_LSR_IDE")
 class fQLSRIDE(CosmologyModelBase):
     """
     Interacting Dark Energy in f(Q) Gravity (Model I: Log-Square-Root)

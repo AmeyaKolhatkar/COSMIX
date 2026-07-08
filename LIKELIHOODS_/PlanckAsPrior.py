@@ -28,10 +28,12 @@ and a RuntimeWarning is issued.  Always supply the value from your companion
 
 import warnings
 import numpy as np
+from CORE_.Registry import cosmix_registry
 from CORE_.LikelihoodBase_ import LikelihoodBase
 from CORE_.ParameterManager_ import Parameter, UniformPrior
 
 
+@cosmix_registry.register_likelihood("planckasprior")
 class PlanckAsPrior(LikelihoodBase):
     """Gaussian prior on ln(10¹⁰ A_s), applied through σ₈₀.
 

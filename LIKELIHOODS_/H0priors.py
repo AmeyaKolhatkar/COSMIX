@@ -11,6 +11,7 @@ TRGBprior    H₀ = 69.8  ± 1.9  km/s/Mpc  (Freedman et al. 2019, TRGB)
 H0LiCOWprior H₀ = 73.3  ± 1.75 km/s/Mpc  (Wong et al. 2020, strong lensing)
 """
 from CORE_.LikelihoodBase_ import LikelihoodBase
+from CORE_.Registry import cosmix_registry
 
 """class GaussianH0Prior(LikelihoodBase):
 
@@ -40,7 +41,7 @@ H0LiCOW = GaussianH0Prior(pm,"H0LiCOW",73.3,1.75)"""
     and Dan Scolnic4
 """
 
-
+@cosmix_registry.register_likelihood("shoes")
 class SH0ESprior(LikelihoodBase):
     name="SH0ES"
 
@@ -74,6 +75,7 @@ class SH0ESprior(LikelihoodBase):
     Rachael L. Beaton, Christopher R. Burns, Myung Gyoon Lee, Andrew J. Monson, Jillian R. Neeley, M. M. Phillips,
     Jeffrey A. Rich and Mark Seibert
 """
+@cosmix_registry.register_likelihood("trgb")
 class TRGBprior(LikelihoodBase):
     name="TRGB"
 
@@ -109,6 +111,7 @@ class TRGBprior(LikelihoodBase):
     Stefan Hilbert, Olga Tihhonova, Tommaso Treu, Adriano Agnello, Xuheng Ding, Inh Jee, Eiichiro Komatsu, Anowar J. Shajib,
     Alessandro Sonnenfeld, Roger D. Blandford, L´eon V. E. Koopmans, Philip J. Marshall and Georges Meylan
 """
+@cosmix_registry.register_likelihood("holicow")
 class H0LiCOWPrior(LikelihoodBase):
     name="H0LiCOW"
 

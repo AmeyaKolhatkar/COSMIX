@@ -13,12 +13,13 @@ Data file: DATA_/Eg_statistic/eg_statistic.xlsx
 """
 
 from pathlib import Path
+from CORE_.Registry import cosmix_registry
 from CORE_.LikelihoodBase_ import LikelihoodBase, GaussMargTerm
 import numpy as np
 import pandas as pd
 
-Default_data_file = Path(__file__).resolve().parent.parent / "DATA_" / "Eg_statistic" / "eg_statistic.xlsx"
-
+Default_data_file = Path(__file__).resolve().parent.parent / "DATA_" / "Eg_statistic" / "Eg_statistic_noVIPERS.xlsx"
+@cosmix_registry.register_likelihood("egstatistic")
 class EgStatistic(LikelihoodBase):
     name = "Eg"
 

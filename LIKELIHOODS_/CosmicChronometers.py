@@ -16,6 +16,7 @@ Combines two complementary CC datasets:
 Data files live under DATA_/CC_NEW/ relative to the repository root.
 """
 from pathlib import Path
+from CORE_.Registry import cosmix_registry
 from CORE_.LikelihoodBase_ import LikelihoodBase, GaussMargTerm
 from CORE_.ParameterManager_ import Parameter, GaussianPrior
 import numpy as np
@@ -30,6 +31,7 @@ Default_Hz_cor_file   = _DATA_CC / "CCcovariance" / "data" / "HzTable_MM_BC03.da
 # ══════════════════════════════════════════════════════════════════════════════
 # CosmicChronometers
 # ══════════════════════════════════════════════════════════════════════════════
+@cosmix_registry.register_likelihood("cosmicchronometers")
 class CosmicChronometers(LikelihoodBase):
     name="CC"
 

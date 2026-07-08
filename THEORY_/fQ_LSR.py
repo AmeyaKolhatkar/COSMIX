@@ -13,13 +13,14 @@ Omegam0  — matter density today
 alpha1   — amplitude of the log-square-root correction
 """
 import numpy as np
+from CORE_.Registry import cosmix_registry
 from CORE_.CosmologyModelBase import CosmologyModelBase
 from CORE_.ParameterManager_ import Parameter, GaussianPrior, UniformPrior
 from CORE_.BackgroundConfiguration import BackgroundConfig
 from THEORY_.Solvers_.BackgroundProblem import AnalyticalProblem
 
 from Constants import c, Omegar0
-
+@cosmix_registry.register_model("fQ_LSR")
 class fQLSR(CosmologyModelBase):
     """
     f(Q) = Q + alpha1 Q0 sqrt(Q / alpha2 Q0) ln ( alpha2 Q0 / Q )

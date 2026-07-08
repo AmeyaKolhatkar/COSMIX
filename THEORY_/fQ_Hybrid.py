@@ -15,6 +15,7 @@ alpha1   — coefficient of the linear Q term
 alpha2   — coefficient of the constant Q₀ term
 """
 import numpy as np
+from CORE_.Registry import cosmix_registry
 from CORE_.CosmologyModelBase import CosmologyModelBase
 from CORE_.ParameterManager_ import Parameter, GaussianPrior, UniformPrior
 from CORE_.BackgroundConfiguration import BackgroundConfig
@@ -22,7 +23,7 @@ from THEORY_.Solvers_.BackgroundProblem import AnalyticalProblem
 from THEORY_.CurvedfQBase import CurvedfQBase 
 
 from Constants import c, Omegar0
-
+@cosmix_registry.register_model("fQ_Hybrid")
 class fQHybrid(CosmologyModelBase):
     """
     f(Q) = alpha1 Q + alpha2 Q_0 + alpha3 Q_0^2 / Q
@@ -133,7 +134,7 @@ class fQHybrid(CosmologyModelBase):
         ]
  
 
-
+@cosmix_registry.register_model("fQ_Hybrid_Curved")
 class fQHybrid_Curved(CurvedfQBase):
     """
     Curved extension of fQHybrid.

@@ -26,6 +26,7 @@ M and H0 are fully degenerate; do not use this sample alone to measure H0.
 """
 import gzip
 from pathlib import Path
+from CORE_.Registry import cosmix_registry
 from CORE_.LikelihoodBase_ import LikelihoodBase, GaussMargTerm
 from CORE_.ParameterManager_ import Parameter, UniformPrior
 import numpy as np
@@ -59,7 +60,7 @@ def _load_snana_cov(txt_gz_path: Path) -> np.ndarray:
     n = int(cov_flat[0])
     return cov_flat[1:].reshape(n, n)
 
-
+@cosmix_registry.register_likelihood("desy5")
 class DESY5(LikelihoodBase):
     name = "D5"
 

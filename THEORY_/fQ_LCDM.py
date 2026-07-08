@@ -15,6 +15,7 @@ Fixed constants
 Omegar0  — radiation density (imported from Constants.py)
 """
 import numpy as np
+from CORE_.Registry import cosmix_registry
 from CORE_.CosmologyModelBase import CosmologyModelBase
 from THEORY_.CurvedfQBase import CurvedfQBase
 from CORE_.ParameterManager_ import Parameter, GaussianPrior, UniformPrior
@@ -26,7 +27,8 @@ from Constants import c, Omegar0
 # ══════════════════════════════════════════════════════════════════════════════
 # fQ_LCDM
 # ══════════════════════════════════════════════════════════════════════════════
-class fQ_LCDM(CosmologyModelBase):
+@cosmix_registry.register_model("fQ_LCDM")
+class fQLCDM(CosmologyModelBase):
     name = "fQ_LCDM"
 
     def __init__(self, pm):
@@ -67,6 +69,38 @@ class fQ_LCDM(CosmologyModelBase):
         return 1/out 
 
     
+    def build_engines(self, theta, requirements):
+        """Override to replace CAMBKinematics with MGCAMBWrapper for fQ_LCDM.
+
+        fQ_LCDM is background-inert: H(z) = ΛCDM, so the transfer function T(k)
+        is identical to ΛCDM and only the growth factor D(z) is modified via μ_G(z).
+        MGCAMBWrapper applies P_fQ(k,z) = P_ΛCDM(k,z) × [D_fQ(z)/D_fQ(0)]²,
+        which is exact for this class of model and cheaper than running MGCAMB.
+        """
+        engines = super().build_engines(theta, requirements)
+
+        needs_camb = any(
+            name in ("Pk_linear", "Pk_nonlinear", "sigma8_camb", "r_drag")
+            for name in requirements
+        )
+        if not needs_camb:
+            return engines
+
+        from CORE_.CAMBKinematics import MGCAMBWrapper
+        from CORE_.GrowthKinematics import GrowthKinematics
+
+        camb_engine   = next((e for e in engines if "Pk_linear" in e.capabilities), None)
+        growth_engine = next((e for e in engines if "delta" in e.capabilities), None)
+
+        if camb_engine is None or growth_engine is None:
+            return engines  # fallback: something went wrong, leave as-is
+
+        # Replace the plain CAMB engine with the growth-corrected wrapper
+        engines = [e for e in engines if e is not camb_engine]
+        engines.append(MGCAMBWrapper(camb_engine, growth_engine))
+
+        return engines
+
     @classmethod
     def declare_parameters(cls):        # always use 'cls' for class methods
         return [

@@ -12,8 +12,10 @@ values are provided in the data file, giving the corrected quantity:
 Data file: DATA_/RSD/RSD-1.xlsx  (columns: z, fs8, fs8_err, fidom)
 nuisance parameter: sigma80 (σ₈ today), uniform prior [0.6, 1.2].
 """
+
 import numpy as np
 import pandas as pd
+from CORE_.Registry import cosmix_registry
 from CORE_.LikelihoodBase_ import LikelihoodBase
 from CORE_.ParameterManager_ import Parameter, UniformPrior, GaussianPrior
 from THEORY_.LCDM_ import LCDM
@@ -22,8 +24,9 @@ from CORE_.BackgroundConfiguration import BackgroundConfig
 from CORE_.ParameterManager_ import ParameterManager
 
 from pathlib import Path as _Path
-Default_data_file = _Path(__file__).resolve().parent.parent / "DATA_" / "RSD" / "RSD-1_noVIPERS.xlsx"
+Default_data_file = _Path(__file__).resolve().parent.parent / "DATA_" / "RSD" / "RSD-1.xlsx"
 
+@cosmix_registry.register_likelihood("rsd")
 class RedshiftSpaceDistortion(LikelihoodBase):
     name = "RSD"
 

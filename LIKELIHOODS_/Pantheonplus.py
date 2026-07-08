@@ -10,6 +10,7 @@ Data files (DATA_/Pantheon/)
     Pantheon+SH0ES_STAT+SYS.cov — full statistical + systematic covariance
 """
 from pathlib import Path
+from CORE_.Registry import cosmix_registry
 from CORE_.LikelihoodBase_ import LikelihoodBase, GaussMargTerm
 from CORE_.ParameterManager_ import Parameter, GaussianPrior, UniformPrior
 import numpy as np
@@ -20,6 +21,7 @@ Default_data_file = _DATA_PP / "Pantheon+SH0ES.dat"
 Default_cov_file  = _DATA_PP / "Pantheon+SH0ES_STAT+SYS.cov"
 
 # ══════════════════════════════════════════════════════════════════════════════
+@cosmix_registry.register_likelihood("pantheonplus")
 class Pantheonplus(LikelihoodBase):
     name="PP"
 

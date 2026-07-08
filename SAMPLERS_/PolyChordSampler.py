@@ -25,7 +25,9 @@ except ImportError:
     _POLYCHORD_AVAILABLE = False
 
 from SAMPLERS_.NestedSamplingBase import NestedSamplerBase
+from CORE_.Registry import cosmix_registry
 
+@cosmix_registry.register_sampler("polychord")
 class PolyChordSampler(NestedSamplerBase):
     """
     Wrapper for the PolyChord nested sampling algorithm.

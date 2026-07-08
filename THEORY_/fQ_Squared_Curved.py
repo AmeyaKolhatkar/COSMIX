@@ -29,11 +29,12 @@ Fixed:           alpha1 = 1
 Derived:         alpha2, alpha3 = beta3 / Q₀
 """
 import numpy as np
+from CORE_.Registry import cosmix_registry
 from THEORY_.CurvedfQBase import CurvedfQBase
 from CORE_.ParameterManager_ import Parameter, UniformPrior
 from Constants import Omegar0
 
-
+@cosmix_registry.register_model("fQ_Squared_Curved")
 class fQSquaredCurved(CurvedfQBase):
     """
     f(Q) = alpha1·Q + alpha2·Q₀ + alpha3·Q²

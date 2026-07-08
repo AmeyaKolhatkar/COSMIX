@@ -1,56 +1,42 @@
-"""LCDM — standard Lambda Cold Dark Matter cosmological model.
+"""Implements the CPL/ w0-wa CDM cosmology with the EoS:
 
-Implements the flat LCDM Hubble rate analytically:
-
-    H(z) = H₀ sqrt( Ω_m0 (1+z)³ + Ω_r0 (1+z)⁴ + Ω_Λ )
-
-where Ω_Λ = 1 - Ω_m0 - Ω_r0 (flatness constraint).
-
-Free parameters
----------------
-H0       — Hubble constant today [km/s/Mpc]
-Omegam0  — matter density parameter today
-
-Fixed constants
----------------
-Omegar0  — radiation density (imported from Constants.py)
+    w(z) = w0 + wa * z / (1+z)
 """
 import numpy as np
 from CORE_.Registry import cosmix_registry
 from CORE_.CosmologyModelBase import CosmologyModelBase
 from CORE_.ParameterManager_ import Parameter, GaussianPrior, UniformPrior
 from CORE_.BackgroundConfiguration import BackgroundConfig
-from THEORY_.Solvers_.BackgroundProblem import AnalyticalProblem
+from THEORY_.Solvers_.BackgroundProblem import AnalyticalProblem 
 
 from Constants import c, Omegar0
 
-r = Omegar0  # kept for backward compatibility within this module
-
 # ══════════════════════════════════════════════════════════════════════════════
-# LCDM
+# w0waCDM
 # ══════════════════════════════════════════════════════════════════════════════
-@cosmix_registry.register_model("LCDM")
-class LCDM(CosmologyModelBase):
-    name = "LCDM"
+@cosmix_registry.register_model("CPL")
+class CPL(CosmologyModelBase):
+    name="CPL"
 
     def __init__(self, pm):
         super().__init__(pm)
 
-    def _H(self, z, H0, Omegam0, Omegak0):
+    def _H(self, z, H0, Omegam0, Omegar0, w0, wa):
         z = np.asarray(z)
-        OmegaL = 1 - Omegam0 - r - Omegak0 
-        arg =  Omegam0 * (1.0 + z)**3 + r*( 1.0 + z)**4 + Omegak0*(1.0 + z)**2 + OmegaL
+        omegaDE = (1.0 + z)**(3.0 * ( 1.0 + w0 + wa )) * np.exp(3.0*wa/(1+z))
+        arg = Omegam0 * (1.0 + z)**3 + Omegar0*(1.0 + z)**4 + (1.0 - Omegam0 - Omegar0) * omegaDE
         if np.any(arg <= 0):
-            return np.full_like(z, np.nan)        
+            return np.full_like(z, np.nan)
         return H0 * np.sqrt(arg)
     
     def background_problem(self, theta, z_grid):
         H0 = self.pm.get_value(theta, "H0")
         Omegam0 = self.pm.get_value(theta, "Omegam0")
-        Omegak0 = self.pm.get_value(theta, "Omegak0")
+        w0 = self.pm.get_value(theta, "w0")
+        wa = self.pm.get_value(theta, "wa")
 
         return AnalyticalProblem(
-            h_func=lambda z: self._H(z, H0, Omegam0, Omegak0)
+            h_func=lambda z: self._H(z, H0, Omegam0, Omegar0, w0, wa)
         )
     
     def background_config(self):
@@ -59,10 +45,9 @@ class LCDM(CosmologyModelBase):
             nz=150,
             integration_method="trapz"
         )
-
     
     @classmethod
-    def declare_parameters(cls):        
+    def declare_parameters(cls):
         return [
             Parameter(
                 name="H0",
@@ -81,12 +66,19 @@ class LCDM(CosmologyModelBase):
                 proposed_scale=0.005
             ),
             Parameter(
-                name="Omegak0",
-                latex=r'\Omega_{k0}',
-                prior=UniformPrior(low=-0.2, high=0.5),
+                name="w0",
+                latex=r"w_0",
+                prior=UniformPrior(low=-3.0, high=1.0),      # DESI DR2
                 role="cosmo",
-                status="fixed",
-                value=0.0,
-                proposed_scale=0.01
+                status="free",
+                proposed_scale=0.05
+            ),
+            Parameter(
+                name="wa",
+                latex=r"w_a",
+                prior=UniformPrior(low=-3.0, high=2.0),      # DESI DR2
+                role="cosmo",
+                status="free",
+                proposed_scale=0.05
             )
         ]

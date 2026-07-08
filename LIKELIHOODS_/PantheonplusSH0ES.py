@@ -10,6 +10,7 @@ Use Pantheonplus (+ optional SH0ESprior) for more flexibility.
 Data files: same as Pantheonplus (DATA_/Pantheon/).
 """
 from pathlib import Path
+from CORE_.Registry import cosmix_registry
 from CORE_.LikelihoodBase_ import LikelihoodBase, GaussMargTerm
 from CORE_.ParameterManager_ import Parameter, GaussianPrior, UniformPrior
 import numpy as np
@@ -21,6 +22,7 @@ Default_cov_file  = _DATA_PP / "Pantheon+SH0ES_STAT+SYS.cov"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+@cosmix_registry.register_likelihood("pantheonplusshoes")
 class PantheonplusSH0ES(LikelihoodBase):
     name="PPS"
 

@@ -15,6 +15,7 @@ n        — power-law index of the f(Q) deviation
 """
 import numpy as np
 from numba import njit
+from CORE_.Registry import cosmix_registry
 from CORE_.CosmologyModelBase import CosmologyModelBase
 from CORE_.ParameterManager_ import Parameter, GaussianPrior, UniformPrior
 from CORE_.BackgroundConfiguration import BackgroundConfig
@@ -49,6 +50,7 @@ def fQ_rhs(z, y, params):
 
     return np.array([du_dz], dtype=np.float64)
 
+@cosmix_registry.register_model("fQ_EHybrid")
 class fQEHybrid(CosmologyModelBase):
     """
     f(Q) = alpha1 Q + alpha2 Q0 + alpha3 Q0 (Q0/Q)^n

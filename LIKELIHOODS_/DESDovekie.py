@@ -12,6 +12,7 @@ marginalized over a flat prior using the Conley et al. (2011) formula.
 M and H0 are fully degenerate; do not use this sample alone to measure H0.
 """
 from pathlib import Path
+from CORE_.Registry import cosmix_registry
 from CORE_.LikelihoodBase_ import LikelihoodBase, GaussMargTerm
 from CORE_.ParameterManager_ import Parameter, GaussianPrior, UniformPrior
 import numpy as np
@@ -22,6 +23,7 @@ Default_data_file = _DATA_D5Dovekie / "DES-Dovekie_HD.csv"
 Default_cov_file  = _DATA_D5Dovekie / "covtot_inv_000.npz"
 
 # ══════════════════════════════════════════════════════════════════════════════
+@cosmix_registry.register_likelihood("desdovekie")
 class DESDovekie(LikelihoodBase):
     name="D5Dovekie"
 

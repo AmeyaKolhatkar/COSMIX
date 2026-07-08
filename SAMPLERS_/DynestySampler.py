@@ -18,7 +18,9 @@ import numpy as np
 import dynesty
 import dynesty.pool as dypool
 from SAMPLERS_.NestedSamplingBase import NestedSamplerBase
+from CORE_.Registry import cosmix_registry
 
+@cosmix_registry.register_sampler("dynesty")
 class DynestySampler(NestedSamplerBase):
     """
     Wrapper for the pure-Python Dynesty dynamic nested sampler.

@@ -14,6 +14,7 @@ Data files (DATA_/DDTB/)
 model using the Eisenstein-Hu approximation.<<<
 """
 from pathlib import Path
+from CORE_.Registry import cosmix_registry
 from CORE_.LikelihoodBase_ import LikelihoodBase, GaussMargTerm
 from CORE_.ParameterManager_ import Parameter, GaussianPrior, UniformPrior
 import numpy as np
@@ -23,6 +24,7 @@ _DATA_DDTB = Path(__file__).resolve().parent.parent / "DATA_" / "DDTB"
 Default_data_file = _DATA_DDTB / "desi_gaussian_bao_ALL_GCcomb_mean.txt"
 Default_cov_file  = _DATA_DDTB / "desi_gaussian_bao_ALL_GCcomb_cov.txt"
 
+@cosmix_registry.register_likelihood("desidr2bao")
 class DESIDRIIBAO(LikelihoodBase):
     name="DDTB"
 

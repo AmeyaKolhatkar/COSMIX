@@ -18,6 +18,7 @@ Layered architecture (active layer set in the class body):
   Layer 4 — modified gravity: d_L^GW vs d_L^EM splitting, friction terms,
              running Planck mass; implemented via a GWKinematics engine layer.
 """
+from CORE_.Registry import cosmix_registry
 from CORE_.LikelihoodBase_ import LikelihoodBase
 import numpy as np
 import pandas as pd
@@ -34,6 +35,7 @@ class GWEvent:
         self.err_down = float(err_down)
 
 
+@cosmix_registry.register_likelihood("gw")
 class GWStandardSiren(LikelihoodBase):
     name="GW_Standard_Siren"
 
