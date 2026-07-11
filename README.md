@@ -70,13 +70,13 @@ model:
   name: fQ_EHybrid          # LCDM | fQ_Hybrid | fQ_EHybrid | fQ_LSR | fQ_LSR_IDE | fQ_Hybrid_IDE
 
 likelihoods:
-  - name: CC                 # Cosmic Chronometers
-  - name: DDTB               # DESI DR2 BAO
-  - name: PP                 # Pantheon+ (SN Ia)
-  - name: RSD                # Redshift Space Distortions
+  - name: cosmicchronometers        # Cosmic Chronometers
+  - name: desidr2bao                # DESI DR2 BAO
+  - name: pantheonplus              # Pantheon+ (SN Ia)
+  - name: rsd                       # Redshift Space Distortions
 
 sampler:
-  name: dynesty              # emcee | dynesty | polychord
+  name: dynesty                     # emcee | dynesty | polychord
   init:
     nlive: 500
 

@@ -35,6 +35,8 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/AmeyaKolhatkar/COSMIX"
+Documentation = "https://cosmix.readthedocs.io/en/latest/readme.html"
+Licensing = "https://github.com/AmeyaKolhatkar/COSMIX/blob/master/LICENSE"
 
 [project.scripts]
 cosmix = "cosmix.run_cosmix:cli_entry"
