@@ -1,17 +1,13 @@
 run:
   name: "As Followup"
-  description: "TEST"
-  run_id: "As_Followup/base_RSD_noVIPERS_lcdml0as"       # Shared Run Base : Compressed CMB + DDTB + Pantheon+ + Planck As Prior
+  description: "PIP TEST"
+  run_id: "cosmix_pip_test_CCMB"   
 
 model:
-  name: fQ_LCDM
+  name: LCDM 
 
 likelihoods:  
-  - name: CompCMB
-  - name: PP
-  - name: DDTB
-  - name: PlkAsprior
-  - name: RSD
+  - name: compressedcmb 
 
 # ── emcee (MCMC) ────────────────────────────────────────────────────────────
 #sampler:
@@ -19,7 +15,7 @@ likelihoods:
 #  init: 
 #    random_seed: 42
 #  run: 
-#    nsteps: 5000
+#    nsteps: 1000
 #    burn_in: 0
   
 convergence:
@@ -41,7 +37,7 @@ sampler:
   init:
     nlive: 500           # 25×ndim is sufficient; 6000 was 800× overkill for 7D
     sample: rslice       # slice sampler handles sigma80-lambda0 degeneracy; rwalk stalls
-    n_cpu: 6             # CPU cores for parallel likelihood evaluation (default 1 = serial)
+    n_cpu: 1             # CPU cores for parallel likelihood evaluation (default 1 = serial)
 #
 # ── PolyChord (nested sampling) ──────────────────────────────────────────────
 # To use PolyChord, replace the sampler block above with this block.

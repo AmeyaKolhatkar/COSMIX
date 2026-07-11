@@ -20,5 +20,19 @@ numba>=0.58
 # pypolychord is optional; the pipeline falls back gracefully if not installed.
 # pypolychord  # see DATA_/PolyChordLite/
 
+# Boltzmann solver
+#
+#   CAMB (pip-installable, sufficient for fQ_LCDM and all background-inert models):
+#       pip install camb
+camb>=1.5.0
+#
+#   MGCAMB (required only for MGCAMBKinematics — k-dependent modified gravity).
+#   NOT on PyPI; must be built from source:
+#       git clone https://github.com/sfu-cosmo/MGCAMB
+#       cd MGCAMB && make && pip install -e .
+#   Requires gfortran (Linux: apt install gfortran; Windows: MinGW).
+#   CAMBKinematics.py tries `import mgcamb` first; falls back to `import camb`
+#   automatically — MGCAMB is optional until MGCAMBKinematics is needed.
+
 # Optional — only needed for DES-SN5YR likelihood
 # pandas already handles .csv; .txt.gz uses standard gzip support (no extra package)
