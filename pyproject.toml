@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -39,8 +39,7 @@ Homepage = "https://github.com/AmeyaKolhatkar/COSMIX"
 [project.scripts]
 cosmix = "cosmix.run_cosmix:cli_entry"
 
-[tool.setuptools.dynamic]
-version = { attr = "cosmix.__version__" }
+[tool.setuptools-scm]
 
 [project.optional-dependencies]
 docs = [
