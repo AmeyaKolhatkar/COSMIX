@@ -39,7 +39,7 @@ Homepage = "https://github.com/AmeyaKolhatkar/COSMIX"
 [project.scripts]
 cosmix = "cosmix.run_cosmix:cli_entry"
 
-[tool.setuptools-scm]
+[tool.setuptools_scm]
 
 [project.optional-dependencies]
 docs = [
