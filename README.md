@@ -14,7 +14,7 @@ of likelihoods (CC, Pantheon+, DESI DR2 BAO, RSD, GW standard sirens, DES-SN5YR)
 ### From PyPI
 
 ```bash
-pip install cosmix
+pip install pycosmix
 ```
 
 ### From source (for development)
