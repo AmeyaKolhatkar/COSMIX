@@ -11,33 +11,43 @@ of likelihoods (CC, Pantheon+, DESI DR2 BAO, RSD, GW standard sirens, DES-SN5YR)
 
 ## Installation
 
-### 1. Clone the repository
+### From PyPI
+
+```bash
+pip install cosmix
+```
+
+### From source (for development)
 
 ```bash
 git clone https://github.com/AmeyaKolhatkar/COSMIX.git
 cd COSMIX
+pip install -e .
 ```
 
 For a specific tagged release (recommended for reproducible research):
 
 ```bash
-git clone --branch v1.0.0 https://github.com/AmeyaKolhatkar/COSMIX.git
+git clone --branch v1.4.0 https://github.com/AmeyaKolhatkar/COSMIX.git
 cd COSMIX
+pip install -e .
 ```
 
 Alternatively, a stable archived version is available via Zenodo:
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19791571.svg)](https://doi.org/10.5281/zenodo.19791571)
 
-### 2. Install dependencies
+### Optional: build documentation locally
 
 ```bash
-pip install -r requirements.txt
+pip install -e ".[docs]"
 ```
+
+### Optional: PolyChord nested sampler
 
 Warning! The PolyChord nested sampler has not been tested extensively. If you still wish to use it, do
 
 ```bash
-pip install -e DATA_/PolyChordLite
+pip install -e src/cosmix/data/PolyChordLite
 ```
 
 On **Windows** you will need [WinLibs/MinGW](https://winlibs.com/) with `gfortran`
@@ -80,11 +90,13 @@ outputs:
 
 ### 2. Run
 
+Once installed, the `cosmix` command is available on your PATH:
+
 ```bash
-python run_cosmix.py input.yaml
+cosmix input.yaml
 ```
 
-Results are saved to `RUNS_/<run_id>/` including the chain, diagnostics,
+Results are saved to `runs/<run_id>/` including the chain, diagnostics,
 information criteria (AIC, BIC, DIC), and publication-quality figures.
 
 ---
@@ -93,21 +105,24 @@ information criteria (AIC, BIC, DIC), and publication-quality figures.
 
 ```
 COSMIX/
-├── run_cosmix.py         # Main entry point — reads input.yaml and runs the pipeline
-├── Constants.py          # Physical constants (c, Omegar0)
-├── input.yaml            # Template run configuration
-│
-├── CORE_/                # Framework internals (pipeline, parameter management, caching)
-├── THEORY_/              # Cosmological models (LCDM, f(Q) variants)
-│   └── Solvers_/         # ODE/root solvers (RK4, analytical, Numba JIT)
-├── LIKELIHOODS_/         # Observational likelihoods
-├── SAMPLERS_/            # Sampler wrappers (emcee, Dynesty, PolyChord)
-├── DRIVERS_/             # Multi-chain convergence strategies
-├── POST_PROCESSING_/     # Results, diagnostics, visualization, archival
-│   └── Archive_/         # Run manifest, serialization (YAML/JSON/NumPy)
-├── DATA_/                # Observational data files
-│   └── PolyChordLite/    # Bundled PolyChord source (build separately)
-├── RUNS_/                # Output directory (gitignored contents)
+├── pyproject.toml            # Package metadata, dependencies, build config
+├── input.yaml                # Template run configuration
+├── src/
+│   └── cosmix/
+│       ├── run_cosmix.py     # Main entry point — reads input.yaml and runs the pipeline
+│       ├── Constants.py      # Physical constants (c, Omegar0)
+│       ├── core/             # Framework internals (pipeline, parameter management, caching)
+│       ├── theory/           # Cosmological models (LCDM, f(Q) variants)
+│       │   ├── Solvers_/     # ODE/root solvers (RK4, analytical, Numba JIT)
+│       │   └── Background_/  # Background state layout
+│       ├── likelihoods/      # Observational likelihoods
+│       ├── samplers/         # Sampler wrappers (emcee, Dynesty, PolyChord)
+│       ├── drivers/          # Multi-chain convergence strategies
+│       ├── postprocessing/   # Results, diagnostics, visualization, archival
+│       │   └── Archive_/     # Run manifest, serialization (YAML/JSON/NumPy)
+│       └── data/             # Observational data files
+│           └── PolyChordLite/  # Bundled PolyChord source (build separately)
+└── runs/                     # Output directory (gitignored contents)
 ```
 
 ---
@@ -149,12 +164,12 @@ COSMIX/
 
 ## Adding a New Model
 
-1. Create `THEORY_/MyModel.py` inheriting from `CORE_.CosmologyModelBase`.
+1. Create `src/cosmix/theory/MyModel.py` inheriting from `cosmix.core.CosmologyModelBase`.
 2. Implement `declare_parameters()`, `check_physicality()`, and `get_requirements()`.
-3. Register it in through the `Registry.py` utility 
+3. Register it through the `Registry.py` utility
    ```python
-   from CORE_.Registry import cosmix_registry
-   
+   from cosmix.core.Registry import cosmix_registry
+
    @cosmix_registry.register_model("MyModel")
    class MyModel(...)
    ```
@@ -162,12 +177,12 @@ COSMIX/
 
 ## Adding a New Likelihood
 
-1. Create `LIKELIHOODS_/MyLikelihood.py` inheriting from `CORE_.LikelihoodBase_`.
+1. Create `src/cosmix/likelihoods/MyLikelihood.py` inheriting from `cosmix.core.LikelihoodBase_`.
 2. Implement `declare_parameters()`, `get_requirements()`, and `lnlike()`.
-3. Register it in through the `Registry.py` utility 
+3. Register it through the `Registry.py` utility
    ```python
-   from CORE_.Registry import cosmix_registry
-   
+   from cosmix.core.Registry import cosmix_registry
+
    @cosmix_registry.register_likelihood("MyLikelihood")
    class MyLikelihood(...)
    ```
@@ -181,12 +196,12 @@ COSMIX/
 ---
 
 ## Coming Soon
-- `CAMB` Interface and CMB implementation capabilities.
+- Full `CAMB`-based CMB power spectrum likelihoods (preliminary interface already in place).
 
 ## Requirements
 
 - Python ≥ 3.10
-- See `requirements.txt` for the full list of packages.
+- See `pyproject.toml` for the full list of dependencies.
 - A Fortran compiler (`gfortran`) is only needed if building PolyChordLite.
 
 ---
