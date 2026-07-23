@@ -151,7 +151,7 @@ COSMIX/
 | `pantheonplusshoes` | Pantheon+SH0ES (SN Ia + H₀ prior) | Brout et al. 2022 |
 | `desidr2bao` | DESI DR2 BAO (full GC combination) | DESI Collaboration 2025 |
 | `rsd` | Redshift Space Distortions (fσ₈) | Various |
-| `gw` | GW Standard Sirens (GW170817) | LIGO/Virgo |
+| `gw` | GW Standard Sirens (GW170817) | LIGO/Virgo (Test implementation only) |
 | `desy5` | DES-SN5YR (SN Ia with probabilistic classification) | DES Collaboration |
 | `desdovekie` | DES-Dovekie Likelihood | DES Collaboration |
 | `shoes` | SH0ES H₀ Gaussian prior | Riess et al. |
