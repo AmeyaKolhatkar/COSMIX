@@ -8,6 +8,18 @@ The YAML file specifies the model, likelihoods, sampler, convergence
 strategy, and output options.  See input.yaml for a fully-annotated
 example and README.md for the full list of supported keys.
 """
+# Thread limits MUST be set before numpy -- and hence OpenBLAS -- is imported.
+# OpenBLAS reads these when the shared library loads; setting them afterwards
+# is silently a no-op.  One BLAS thread per process is correct here because the
+# samplers already parallelise over likelihood evaluations, so a threaded BLAS
+# inside each worker only oversubscribes the machine.
+import os
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["VECLIB_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
 import numpy as np
 from datetime import datetime, timezone
 import importlib
@@ -32,11 +44,6 @@ from cosmix.drivers.SingleChainConvergence import SingleChainStrategy, NestedStr
 from cosmix.drivers.MultiFixedConvergence import MultiFixedStrategy
 from cosmix.drivers.MultiAutoConvergence import MultiAutoStrategy
 
-
-os.environ["OMP_NUM_THREADS"] = "1"
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-os.environ["MKL_NUM_THREADS"] = "1"
-os.environ["VECLIB_NUM_THREADS"] = "1"
 
 #---------- AUTOMATIC MODEL / LIKELIHOOD / SAMPLER SCAN ----------#
 def scan_modules():
