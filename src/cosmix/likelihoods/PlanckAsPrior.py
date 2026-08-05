@@ -1,5 +1,28 @@
 """PlanckAsPrior — Gaussian prior on the primordial amplitude A_s.
 
+.. deprecated::
+    Superseded by :class:`~cosmix.likelihoods.PlanckAsPriorCAMB`.  Retained
+    so that runs archived under ``runs/Hybrid_2/Planckprior_runs`` remain
+    interpretable; do not use it for new analyses.
+
+    Two independent problems:
+
+    1. *The Planck value never enters.*  Substituting the ``lnAs_implied``
+       line below into the ``chi2`` line cancels ``lnAs_mean`` identically,
+       leaving ``chi2 = (2 ln(σ₈₀/σ₈₀_ref) / lnAs_sigma)²`` — a 0.7%-wide
+       Gaussian pulling σ₈₀ toward ``sigma80_ref``, carrying no Planck
+       amplitude information at all.  With ``sigma80_ref`` taken from a
+       companion ΛCDM fit to the same data (as instructed below), the prior
+       asks the chain to agree with itself.
+
+    2. *The σ₈₀ → A_s mapping is not a pure amplitude rescaling.*  It also
+       depends on the transfer function (Ω_m h², Ω_b h², n_s, h) and, for
+       modified-growth models, on the total growth factor D₀(λ).  Neither is
+       visible here — ``get_requirements`` returns ``{}``, so this likelihood
+       is structurally unable to see either.
+
+    ``PlanckAsPriorCAMB`` fixes both; see its module docstring for the algebra.
+
 Since σ₈₀² ∝ A_s (for fixed transfer function shape), a Gaussian prior on
 ln(10¹⁰ A_s) is equivalent to a Gaussian prior on 2·ln(σ₈₀/σ₈₀_ref) with
 the same width.  This likelihood implements that constraint directly on the

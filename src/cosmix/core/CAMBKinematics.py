@@ -144,6 +144,18 @@ class CAMBKinematics(ObservableEngineBase):
             return None
         return (self._sigma80 / self._sigma8_ref) ** 2
 
+    @property
+    def sigma8_ref(self):
+        """sigma8(z=0) predicted by CAMB at the fixed reference amplitude As_ref,
+        for this instance's (H0, Omegam0, Omegab0) — i.e. BEFORE rescaling to the
+        sampled sigma80.  This is the ℐ-encoding quantity used to compute the
+        per-sample implied amplitude:
+
+            A_s^implied = As_ref * (sigma80 / sigma8_ref)²
+
+        Returns None if the CAMB run failed (see _run_camb)."""
+        return self._sigma8_ref
+
     def Pk_linear(self, k, z):
         """Linear matter power spectrum P_lin(k,z).
 
@@ -404,5 +416,9 @@ class MGCAMBWrapper(ObservableEngineBase):
 
     def r_drag(self, z):
         return self._camb.r_drag(z)
+
+    @property
+    def sigma8_ref(self):
+        return self._camb.sigma8_ref
 
     

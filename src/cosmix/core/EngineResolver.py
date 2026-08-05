@@ -23,6 +23,7 @@ Requirement_map = {
     "delta": "delta",
     "f": "f",
     "fsigma8": "fsigma8",
+    "growth_ratio": "growth_ratio",
     "muG": "muG",
     "Pk_linear": "Pk_linear",
     "Pk_nonlinear": "Pk_nonlinear",
