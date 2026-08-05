@@ -98,9 +98,9 @@ from scipy.interpolate import RegularGridInterpolator
 from cosmix.core.Registry import cosmix_registry
 from cosmix.core.LikelihoodBase_ import LikelihoodBase
 from cosmix.core.ParameterManager_ import Parameter, UniformPrior
+from cosmix.core.Paths import DATA_DIR
 
-_DEFAULT_GRID = (Path(__file__).resolve().parents[1]
-                 / "nbks_n_others" / "sigma8_ref_grid_wide.npz")
+_DEFAULT_GRID = DATA_DIR / "sigma8_ref" / "sigma8_ref_grid_wide.npz"
 
 # Single redshift at which growth_ratio is requested. R is a z=0 scalar; the
 # cache is keyed on a redshift grid, so we ask for it at one point.
